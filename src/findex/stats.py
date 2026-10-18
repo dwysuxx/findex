@@ -31,7 +31,7 @@ def main(root: Path, limit: int | None = None) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("root", type=Path)
+    parser.add_argument("root", type=Path, nargs="?", default=Path("data/dota2wiki.jsonl"))
     parser.add_argument("--limit", type=int, default=None)
     args = parser.parse_args()
     main(args.root, args.limit)

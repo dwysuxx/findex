@@ -1,1 +1,13 @@
-data
+﻿.venv/
+__pycache__/
+*.pyc
+index.bin
+index.json
+_m4_tmp.bin
+_tmp_index.*
+
+index.bin
+index.json
+_m4_tmp.bin
+_tmp_index.*
+.idea/

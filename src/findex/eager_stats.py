@@ -38,4 +38,5 @@ def main_eager(root: Path) -> None:
 
 if __name__ == "__main__":
     import sys
-    main_eager(Path(sys.argv[1]))
+    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/dota2wiki.jsonl")
+    main_eager(root)

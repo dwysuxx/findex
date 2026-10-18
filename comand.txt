@@ -1,0 +1,20 @@
+uv run ruff check
+uv run ruff check --fix
+uv run ruff format .
+
+LAB\01\
+
+# M1 —
+uv run python -c "from pathlib import Path; from findex.corpus import iter_documents; doc = next(iter_documents(Path('data/dota2wiki.jsonl'))); print(doc.doc_id, len(doc.text))"
+
+# M2 —
+uv run pytest tests/test_tokenize.py -v
+
+# M3 —
+uv run python -m findex.stats data/dota2wiki.jsonl
+
+# M3 —
+uv run python -m findex.stats data/dota2wiki.jsonl --limit 5
+
+# M4 —
+uv run python -m findex.eager_stats data/dota2wiki.jsonl

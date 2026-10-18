@@ -13,6 +13,13 @@ class Document:
     text: str | None
 
 def iter_documents(root: Path) -> Iterator[Document]:
+    """
+    Read jsonl file for one line and yield Document objects.(LAZY ITERATOR)
+    Args:
+        root: Path
+    Returns:
+        Iterator[Document]: An iterator of Document objects
+    """
     with root.open(encoding="utf-8", errors='replace') as f:
         for line_number, line in enumerate(f, start=1):
             if not line.strip():
