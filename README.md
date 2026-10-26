@@ -18,14 +18,15 @@
 | Файл | Призначення |
 |---|---|
 | `findex/index.py` | **M1**: `Index(Mapping[str, list[Posting]])`, `num_docs`, `avg_doc_length` (`cached_property`), `doc_length()`, `df()`, контекстний менеджер `open_index`, `build_index(positions=...)` |
-| `findex/ranking.py` | **M2**: протокол `Scorer`, `TfIdf`, `BM25(k1=1.5, b=0.75)`, `SearchResult(order=True)`, `rank()` з `heapq.nlargest` |
+| `findex/ranking.py` | **M2**: протокол `Scorer`, `TfIdf`, `BM25(k1=1.5, b=0.75)`, `SearchResult(order=True)`, `rank()` з `heapq.nlargest`; **Stretch**: `ResultList(Sequence)` |
 | `findex/query.py` | **M3**: лексер + рекурсивний спуск → дерево `Term` / `Phrase` / `And` / `Or` / `Not`, оператори `&` `\|` `~`, `evaluate(index)` |
 | `findex/utils.py` | **M4**: декоратор `@timed` (з `functools.wraps`) |
 | `findex/engine.py` | **M4**: `Searcher` — розбір → збіги → ранжування (з `lru_cache(maxsize=256)`) → сніпети; CLI |
 | `findex/snippets.py` | **M4**: вікно ±80 символів навколо найкращого збігу, підсвітка `**терм**` |
 | `findex/sanity_checks.py` | три sanity-перевірки ранжування (вивід — markdown нижче) |
 | `findex/evaluate.py` | precision@5 для TF-IDF і BM25 за `tests/eval_queries.json` |
-| `tests/test_lab03_*.py` | тести dunder-методів, скорерів, парсера (рівність дерев), кешу |
+| `findex/explain.py` | **Stretch**: `explain()` на `singledispatch` — дерево запиту і розклад score по термах |
+| `tests/test_lab03_*.py` | тести dunder-методів, скорерів, парсера (рівність дерев), кешу, `ResultList` і `explain` |
 
 ## L3.2 Запуск
 
@@ -39,7 +40,10 @@ uv run python -m findex.engine index.bin '"meat hook" OR (rot AND dismember)' --
 
 uv run python -m findex.sanity_checks index.bin
 uv run python -m findex.evaluate data/dota2wiki.jsonl tests/eval_queries.json
-uv run pytest -q          # 42 passed
+# дерево запиту + розклад score кожного результату
+uv run python -m findex.engine index.bin 'meat hook' -k 1 --scorer tfidf --explain
+
+uv run pytest -q          # 52 passed
 ```
 
 ## L3.3 M1 — `Index` як об'єкт
@@ -234,7 +238,59 @@ BM25 трохи краще: на `silence` і `global` нормалізація 
 - [x] сніпети з підсвіткою
 - [x] таблиця precision@5 (10 запитів) для TF-IDF і BM25
 - [x] git-тег `lab-03`
-- [ ] Stretch (`ResultList` як `Sequence`, `singledispatch` `explain`) — не виконано
+- [x] Stretch: `ResultList` як `Sequence` зі зрізами, `explain` на `singledispatch` (L3.10)
+
+## L3.10 Stretch — `ResultList` і `explain`
+
+**`ResultList(collections.abc.Sequence)`** — `Searcher.search` повертає її замість `list`.
+Реалізовано лише `__getitem__` і `__len__`; `__contains__`, `__iter__`, `__reversed__`, `index()`,
+`count()` дає ABC. `__getitem__` зі `slice` повертає новий `ResultList`, тож `results[:5]`
+лишається видачею, а не стає звичайним списком.
+
+```python
+>>> res = searcher.search("silence", k=10)
+>>> type(res[:5]).__name__, len(res[:5]), res[0] in res
+('ResultList', 5, True)
+>>> print(res[:2])
+[73]   1.978  silencer
+[44]   1.883  templar_assassin
+```
+
+**`explain`** — одна функція з `@functools.singledispatch`; реалізація обирається за типом
+першого аргументу. Для `Term`/`Phrase`/`And`/`Or`/`Not` друкується дерево (ланцюжки однакових
+операторів розгортаються). Для `BM25` і `TfIdf` виводиться розклад score по термах, як у
+`_explain` в Elasticsearch. Будь-який інший `Scorer` (навіть звичайна функція) пояснюється
+через запасну реалізацію: внесок кожного терма без розкладу формули. Тест перевіряє, що сума
+внесків дорівнює score з пошуку.
+
+```
+$ python -m findex.engine index.bin 'pudge OR (meat hook) NOT "blink dagger" OR rot' -k 2 --explain
+OR
+├── TERM pudge
+├── AND
+│   ├── TERM meat
+│   ├── TERM hook
+│   └── NOT
+│       └── PHRASE "blink dagger"
+└── TERM rot
+  [13]  34.154  pudge
+      34.154 = BM25(k1=1.5, b=0.75) для doc 13 (pudge)
+        8.141 = 'pudge': idf 3.324 (df=4, N=124) × tf_norm 2.449 (tf=77, k1=1.5)
+        9.212 = 'meat': idf 3.912 (df=2, N=124) × tf_norm 2.355 (tf=26, k1=1.5)
+        8.632 = 'hook': idf 3.576 (df=3, N=124) × tf_norm 2.414 (tf=45, k1=1.5)
+        8.169 = 'rot': idf 3.576 (df=3, N=124) × tf_norm 2.285 (tf=17, k1=1.5)
+        довжина: dl=4602, avgdl=4219.9, b=0.75 → norm = 1 − b + b·dl/avgdl = 1.068
+  [47]   3.787  dragon_knight
+      3.787 = BM25(k1=1.5, b=0.75) для doc 47 (dragon_knight)
+        0.000 = 'pudge': немає в документі
+        0.000 = 'meat': немає в документі
+        0.000 = 'hook': немає в документі
+        3.787 = 'rot': idf 3.576 (df=3, N=124) × tf_norm 1.059 (tf=1, k1=1.5)
+        довжина: dl=3697, avgdl=4219.9, b=0.75 → norm = 1 − b + b·dl/avgdl = 0.907
+```
+
+Розклад показує, чому Pudge має tf=77 для `pudge`, але лише 8.1 бала: насичення BM25 обмежує
+tf_norm значенням k1+1 = 2.5.
 
 ---
 

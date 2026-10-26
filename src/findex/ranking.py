@@ -3,9 +3,9 @@
 import heapq
 import math
 from collections import defaultdict
-from collections.abc import Collection, Iterable
+from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import Protocol, overload, runtime_checkable
 
 from findex.index import Index, Posting
 
@@ -73,6 +73,44 @@ class SearchResult:
 
     def __str__(self) -> str:
         return f"[{self.doc_id}] {self.score:7.3f}  {self.title}"
+
+
+class ResultList(Sequence[SearchResult]):
+    """Видача пошуку. Sequence дає __contains__, __iter__, __reversed__, index(), count()
+    безкоштовно; ми реалізуємо лише __getitem__ і __len__.
+
+    Зріз повертає ResultList, а не list: results[:5] лишається видачею (з тим самим repr/str).
+    """
+
+    __slots__ = ("_items",)
+
+    def __init__(self, items: Iterable[SearchResult] = ()) -> None:
+        self._items: tuple[SearchResult, ...] = tuple(items)
+
+    @overload
+    def __getitem__(self, i: int) -> SearchResult: ...
+    @overload
+    def __getitem__(self, i: slice) -> "ResultList": ...
+    def __getitem__(self, i: int | slice) -> "SearchResult | ResultList":
+        if isinstance(i, slice):
+            return ResultList(self._items[i])
+        return self._items[i]  # IndexError/TypeError — як у вбудованих послідовностей
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ResultList):
+            return self._items == other._items
+        return NotImplemented
+
+    __hash__ = None  # type: ignore[assignment]  # як у list: рівність за вмістом, не хешується
+
+    def __repr__(self) -> str:
+        return f"ResultList({list(self._items)!r})"
+
+    def __str__(self) -> str:
+        return "\n".join(map(str, self._items)) if self._items else "(немає результатів)"
 
 
 def rank(

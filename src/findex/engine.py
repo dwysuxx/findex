@@ -7,14 +7,16 @@
 import argparse
 import functools
 import logging
+import textwrap
 import time
 import tracemalloc
 from pathlib import Path
 from typing import Self
 
+from findex.explain import explain
 from findex.index import Index, open_index
 from findex.query import parse
-from findex.ranking import BM25, Scorer, SearchResult, TfIdf, rank
+from findex.ranking import BM25, ResultList, Scorer, SearchResult, TfIdf, rank
 from findex.snippets import TextStore, make_snippet
 from findex.utils import timed
 
@@ -56,7 +58,7 @@ class Searcher:
         return self._ranked.cache_info()
 
     @timed
-    def search(self, query: str, k: int = 10, snippets: bool = True) -> list[SearchResult]:
+    def search(self, query: str, k: int = 10, snippets: bool = True) -> ResultList:
         hits_before = self._ranked.cache_info().hits
         ranked, terms = self._ranked(query, k)
         cache_hit = self._ranked.cache_info().hits > hits_before
@@ -67,7 +69,11 @@ class Searcher:
             meta = self.index.doc_meta[doc_id]
             snippet = self._snippet(meta.path, meta.title, terms) if snippets else ""
             results.append(SearchResult(score, doc_id, meta.title, snippet))
-        return results
+        return ResultList(results)
+
+    def explain(self, query: str, doc_id: int) -> str:
+        """Чому doc_id отримав свій score на цьому запиті: розклад по термах."""
+        return explain(self.scorer, self.index, doc_id, parse(query).terms())
 
     def _snippet(self, path: str, doc_id: str, terms: tuple[str, ...]) -> str:
         if self._texts is None:
@@ -99,6 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--format", choices=["pickle", "json"], default="pickle")
     parser.add_argument("--corpus", type=Path, default=None, help="jsonl для сніпетів (за замовч. зі шляху в індексі)")
     parser.add_argument("--repeat", type=int, default=1, help="повторити запит N разів (показати cache HIT)")
+    parser.add_argument("--explain", action="store_true", help="показати дерево запиту і розклад score")
     parser.add_argument("-v", "--verbose", action="store_true", help="DEBUG-логи: час і cache HIT/MISS")
     args = parser.parse_args()
 
@@ -109,6 +116,8 @@ if __name__ == "__main__":
     with open_index(args.index_path, args.format) as index:
         load_time = time.perf_counter() - t0
         print(repr(index))
+        if args.explain:
+            print(explain(parse(args.query)))
         with Searcher(index, SCORERS[args.scorer](), corpus_path=args.corpus) as searcher:
             for _ in range(args.repeat):
                 t1 = time.perf_counter()
@@ -119,6 +128,8 @@ if __name__ == "__main__":
                 print(f"  {r}")
                 if r.snippet:
                     print(f"      {r.snippet}")
+                if args.explain:
+                    print(textwrap.indent(searcher.explain(args.query, r.doc_id), "      "))
             print(f"Кеш: {searcher.cache_info()}")
     _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
