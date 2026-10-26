@@ -1,4 +1,244 @@
-# findex — Lab 02: The Inverted Index
+# findex — пошуковий рушій по Dota 2 wiki
+
+Корпус: `data/dota2wiki.jsonl`, 124 статті про героїв. Індекс з positions:
+`Index(terms=16_106, docs=124, positions=True)`, середня довжина документа 4220 токенів.
+
+- [Lab 03 — Ranking and the Object Model](#lab-03--ranking-and-the-object-model)
+- [Lab 02 — The Inverted Index](#lab-02--the-inverted-index)
+
+---
+
+# Lab 03 — Ranking and the Object Model
+
+`Index` поводиться як вбудований тип Python, пошук ранжує результати (TF-IDF / BM25),
+є мова запитів з дужками й фразами, сніпети з підсвіткою, кеш запитів і оцінка precision@5.
+
+## L3.1 Структура
+
+| Файл | Призначення |
+|---|---|
+| `findex/index.py` | **M1**: `Index(Mapping[str, list[Posting]])`, `num_docs`, `avg_doc_length` (`cached_property`), `doc_length()`, `df()`, контекстний менеджер `open_index`, `build_index(positions=...)` |
+| `findex/ranking.py` | **M2**: протокол `Scorer`, `TfIdf`, `BM25(k1=1.5, b=0.75)`, `SearchResult(order=True)`, `rank()` з `heapq.nlargest` |
+| `findex/query.py` | **M3**: лексер + рекурсивний спуск → дерево `Term` / `Phrase` / `And` / `Or` / `Not`, оператори `&` `\|` `~`, `evaluate(index)` |
+| `findex/utils.py` | **M4**: декоратор `@timed` (з `functools.wraps`) |
+| `findex/engine.py` | **M4**: `Searcher` — розбір → збіги → ранжування (з `lru_cache(maxsize=256)`) → сніпети; CLI |
+| `findex/snippets.py` | **M4**: вікно ±80 символів навколо найкращого збігу, підсвітка `**терм**` |
+| `findex/sanity_checks.py` | три sanity-перевірки ранжування (вивід — markdown нижче) |
+| `findex/evaluate.py` | precision@5 для TF-IDF і BM25 за `tests/eval_queries.json` |
+| `tests/test_lab03_*.py` | тести dunder-методів, скорерів, парсера (рівність дерев), кешу |
+
+## L3.2 Запуск
+
+```bash
+# індекс з positions (потрібні для фраз)
+uv run python -m findex.index data/dota2wiki.jsonl --positions --out index.bin
+
+# пошук: -v вмикає DEBUG-логи @timed і cache HIT/MISS
+uv run python -m findex.engine index.bin 'silence NOT silencer' -k 3 --repeat 2 -v
+uv run python -m findex.engine index.bin '"meat hook" OR (rot AND dismember)' --scorer tfidf
+
+uv run python -m findex.sanity_checks index.bin
+uv run python -m findex.evaluate data/dota2wiki.jsonl tests/eval_queries.json
+uv run pytest -q          # 42 passed
+```
+
+## L3.3 M1 — `Index` як об'єкт
+
+`Index` успадковує `collections.abc.Mapping`: достатньо реалізувати `__getitem__`, `__len__`,
+`__iter__`, а `keys()`, `items()`, `get()`, `__eq__` дає ABC. `__contains__` перевизначено
+для швидкості (пряма перевірка в dict).
+
+```python
+>>> with open_index("index.bin") as ix:
+...     print(len(ix), "pudge" in ix, "xyzzy" in ix, ix.df("hook"), ix.num_docs, ix.avg_doc_length)
+...     p = ix["meat"][0]; print(p.doc_id, p.tf, p.positions[:3])
+...     print(repr(ix), next(iter(ix)))
+...     ix["xyzzy"]
+16106 True False 3 124 4219.9
+13 26 (230, 518, 642)
+Index(terms=16_106, docs=124, positions=True) anti
+KeyError: 'xyzzy'
+>>> ix                      # після виходу з with
+Index(closed)
+```
+
+`open_index` написано через `@contextmanager`: `load` до `yield`, `index.close()` у `finally`,
+тож індекс звільняється і при `return`, і при винятку (тест
+`test_open_index_closes_even_on_exception`). Код Lab 02 (`findex.search`) працює через той самий
+об'єкт.
+
+## L3.4 M2 — ранжування і sanity-перевірки
+
+`Scorer` — `typing.Protocol` з `__call__(term, posting, index) -> float`. `TfIdf` і `BM25` нічого
+не успадковують; підходить і звичайна функція з такою сигнатурою.
+
+- TF-IDF: `(1 + ln tf) · ln(N / df)`
+- BM25: `idf · tf·(k1+1) / (tf + k1·(1 − b + b·dl/avgdl))`, `idf = ln(1 + (N − df + 0.5)/(df + 0.5))`
+
+Вивід `python -m findex.sanity_checks index.bin`:
+
+### Перевірка 1: рідкісний терм важить більше за поширений
+
+| Терм | df | idf (BM25) | внесок за tf=1 у документі середньої довжини |
+|---|---|---|---|
+| рідкісний: `ascetic` | 1 | 4.423 | 4.423 |
+| поширений: `grandmaster` | 123 | 0.012 | 0.012 |
+
+Запит `ascetic OR grandmaster`, top-5:
+
+| # | doc | score | tf(`ascetic`) | tf(`grandmaster`) |
+|---|---|---|---|---|
+| 1 | anti_mage | 6.695 | 2 | 1 |
+| 2 | pugna | 0.023 | 0 | 5 |
+| 3 | lion | 0.018 | 0 | 2 |
+| 4 | silencer | 0.016 | 0 | 2 |
+| 5 | sven | 0.015 | 0 | 1 |
+
+Pugna містить `grandmaster` 5 разів, але це майже нічого не дає: слово є в 123 з 124 документів.
+
+### Перевірка 2: насичення tf у BM25
+
+Терм `thrown` (df=12), документ середньої довжини (4220 токенів).
+
+| tf | BM25 | приріст за одне входження | TF-IDF (1+ln tf)·idf |
+|---|---|---|---|
+| 1 | 2.303 | +2.303 | 2.335 |
+| 2 | 3.289 | +0.987 | 3.954 |
+| 3 | 3.838 | +0.548 | 4.901 |
+| 5 | 4.428 | +0.295 | 6.094 |
+| 10 | 5.006 | +0.116 | 7.713 |
+| 20 | 5.355 | +0.035 | 9.332 |
+| 21 | 5.373 | +0.018 | 9.445 |
+| 50 | 5.589 | +0.007 | 11.471 |
+
+Межа при tf→∞: idf·(k1+1) = 5.756. 21-ше входження додає 0.018 (0.8 % від першого),
+а TF-IDF з логарифмом росте без межі.
+
+### Перевірка 3: короткий документ з одним збігом перемагає довгий з одним збігом
+
+Терм `date`, tf=1 в обох документах:
+
+| документ | довжина (токенів) | BM25 (b=0.75) | BM25 (b=0, без нормалізації) |
+|---|---|---|---|
+| короткий: sven | 2584 | 0.015 | 0.012 |
+| довгий: invoker | 8990 | 0.008 | 0.012 |
+
+При b=0 довжина документа ігнорується, і оцінки однакові.
+
+## L3.5 M3 — мова запитів
+
+```
+or_expr  -> and_expr ('OR' and_expr)*
+and_expr -> not_expr (['AND'] not_expr)*     # неявний AND
+not_expr -> 'NOT' not_expr | atom
+atom     -> WORD | "PHRASE" | '(' or_expr ')'
+```
+
+```python
+>>> parse('a OR b c')
+Or(left=Term(text='a'), right=And(left=Term(text='b'), right=Term(text='c')))
+>>> parse('a OR b c') == Term('a') | (Term('b') & Term('c'))
+True
+```
+
+Тести парсера порівнюють дерева (`tests/test_lab03_query.py`), а не рядки. Фраза перевіряється
+двома вказівниками по positions: позиція `p` першого слова, `p+1` другого і т.д. Ранжування
+застосовується до множини, яку повернув `evaluate`; терми під `NOT` у скор не входять.
+
+## L3.6 M4 — `@timed`, кеш, сніпети
+
+`@timed` стоїть на `build_index`, `load`, `save`, `Searcher.search`, `Searcher._rank_ids`.
+`Searcher` створює `lru_cache(maxsize=256)` для кожного екземпляра над шляхом
+«запит → id результатів» (`Index` не hashable, тому в ключі лише `(query, k)`).
+
+Лог повторного запиту (`--repeat 2 -v`):
+
+```
+DEBUG findex.utils: load took 1368.76 ms
+DEBUG findex.utils: Searcher._rank_ids took 0.58 ms
+DEBUG __main__: query='silence NOT silencer' k=3 cache=MISS
+DEBUG findex.utils: Searcher.search took 67.19 ms
+DEBUG __main__: query='silence NOT silencer' k=3 cache=HIT
+DEBUG findex.utils: Searcher.search took 44.80 ms
+Кеш: CacheInfo(hits=1, misses=1, maxsize=256, currsize=1)
+```
+
+На HIT `_rank_ids` не викликається (рядка про нього немає). Решта часу `search` — читання
+тексту з jsonl і побудова сніпетів, вони не кешуються.
+
+Сніпети:
+
+```
+[44]   1.883  templar_assassin
+    …Slow Duration: 5 Min **Silence** Duration: 1.5 Max **Silence** Duration: 3.5 0.5 0 Aghanim's Shard Upgrade: When activated, traps now **silence** affected enemies.…
+[13]  60.997  pudge
+    …bonuses 25 1.8x **Dismember** Damage/Heal -4s **Meat** **Hook** Cooldown 20 +0.75s **Dismember** Duration +140 **Meat** **Hook** Damage 15 8% Spell Lifesteal 16% **Rot** Slow 10 +5…
+```
+
+## L3.7 Оцінка: precision@5
+
+10 запитів у `tests/eval_queries.json`. Релевантних героїв розмічено за здібностями з гри, а не
+за видачею системи (напр. `remnant` → Storm/Ember/Earth/Void Spirit). Знаменник завжди 5, тому
+для запитів з 1–2 релевантними максимум 0.20 / 0.40.
+
+| Запит | релевантних | P@5 TF-IDF | P@5 BM25 |
+|---|---|---|---|
+| `remnant` | 4 | 0.80 | 0.80 |
+| `illusion OR illusions` | 5 | 0.40 | 0.40 |
+| `silence` | 5 | 0.40 | 0.60 |
+| `ice OR frost` | 6 | 0.60 | 0.60 |
+| `poison` | 3 | 0.60 | 0.60 |
+| `"meat hook"` | 1 | 0.20 | 0.20 |
+| `global` | 5 | 0.60 | 0.80 |
+| `invisibility OR invisible` | 6 | 0.80 | 0.80 |
+| `"mana burn" OR "mana break"` | 2 | 0.40 | 0.40 |
+| `blink` | 2 | 0.40 | 0.40 |
+| **середнє (10 запитів)** | | **0.52** | **0.56** |
+
+BM25 трохи краще: на `silence` і `global` нормалізація за довжиною підняла коротші сторінки
+(Night Stalker, Spectre) над довгими, де слово згадується мимохідь. На більшості запитів
+результати однакові: корпус малий, а документи схожої довжини. Типові помилки обох скорерів —
+сторінки, де терм є в описах предметів або контрпіків (`illusion` в Anti-Mage через Mana Break,
+`blink` у героїв, що купують Blink Dagger). Без стемінгу `illusion` і `illusions` — різні терми.
+
+## L3.8 Рефлексія (коротко)
+
+1. `"python" in index` → `type(index).__contains__(index, "python")` → `bool`; якщо `__contains__`
+   немає, Python пробує `__iter__`, потім `__getitem__`. `len(index)` → `type(index).__len__`,
+   результат перевіряється (має бути `int >= 0`). Built-in шукає метод на типі, для C-типів має
+   швидкий шлях і робить перевірки, яких немає в прямому `index.__len__()`.
+2. Протокол — набір методів, який описує поведінку. `typing.Protocol` перевіряється структурно:
+   успадковувати не треба, перевіряє тайпчекер (або `isinstance` з `@runtime_checkable`). ABC
+   потребує успадкування або `register` і дає готові mixin-методи (як `Mapping` для `Index`).
+3. `@timed` — у `findex/utils.py`. Без `functools.wraps` у функції було б `__name__ == "wrapper"`,
+   не було б docstring і `__wrapped__`, тож `help()`, логи й тести показували б не те.
+4. Декоратор з аргументами — на рівень більше: `retry(times)` повертає `decorator(fn)`, який
+   повертає `wrapper(*a, **kw)` з циклом `for _ in range(times): try: return fn(...)`.
+5. До `yield` виконується `__enter__`, після — `__exit__`. Виняток з тіла `with` кидається
+   всередині генератора в точці `yield`, тож спрацьовує `finally` (або `except`).
+6. Насичення tf (`k1`: чим менше, тим швидше насичення) і нормалізація за довжиною (`b`: частка
+   впливу `dl/avgdl`). При `b = 0` довжина ігнорується (перевірка 3).
+7. `nlargest(k, …)` — купа розміру k, O(n log k); `sorted(...)[:k]` — O(n log n) і повна копія.
+8. `OR` має нижчий пріоритет: `or_expr` спочатку викликає `and_expr`, який «з'їдає» `b c` до
+   `OR`. Тому `a OR b c` = `Or(a, And(b, c))`.
+
+## L3.9 Статус
+
+- [x] `Index`: `__len__`, `__contains__`, `__getitem__`, `__iter__`, `__repr__`; `num_docs`,
+      `avg_doc_length` (`cached_property`), `doc_length`, `df`
+- [x] `open_index` — контекстний менеджер, звільняє ресурси при винятках
+- [x] протокол `Scorer`; `TfIdf` і `BM25`; `heapq.nlargest` для top-k
+- [x] три sanity-перевірки на корпусі (L3.4)
+- [x] рекурсивний спуск; `Term`/`Phrase`/`And`/`Or`/`Not` з `&`, `|`, `~`; тести рівності дерев
+- [x] `@timed` з `functools.wraps` і `lru_cache`; cache HIT видно в лозі
+- [x] сніпети з підсвіткою
+- [x] таблиця precision@5 (10 запитів) для TF-IDF і BM25
+- [x] git-тег `lab-03`
+- [ ] Stretch (`ResultList` як `Sequence`, `singledispatch` `explain`) — не виконано
+
+---
+
+# Lab 02 — The Inverted Index
 
 Інвертований індекс для пошукового рушія: побудова за один потоковий прохід,
 булевий пошук (AND / OR / NOT), збереження на диск у двох форматах і

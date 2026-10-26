@@ -1,10 +1,10 @@
 import json
 import pickle
 import time
-from collections import defaultdict
 from dataclasses import asdict
 from pathlib import Path
 from findex.index import Index, Posting, DocMeta, build_index
+from findex.utils import timed
 
 
 def save_pickle(index: Index, path: Path) -> None:
@@ -13,6 +13,12 @@ def save_pickle(index: Index, path: Path) -> None:
 
 
 def load_pickle(path: Path) -> Index:
+    # SECURITY: pickle.load can execute arbitrary code. A pickle stream is a
+    # small program for the unpickler: an object may define __reduce__ that
+    # returns (os.system, ("rm -rf ~",)), and loading the file calls it.
+    # So load ONLY files this program wrote itself, NEVER a file that came
+    # from a network or an untrusted user. For untrusted data use json
+    # (see load_json) or a purpose-built binary format.
     with open(path, "rb") as f:
         return pickle.load(f)
 
@@ -20,9 +26,13 @@ def load_pickle(path: Path) -> Index:
 def save_json(index: Index, path: Path) -> None:
     data = {
         "postings": {
-            term: [[p.doc_id, p.tf] for p in plist]
+            term: [
+                [p.doc_id, p.tf, list(p.positions)] if p.positions else [p.doc_id, p.tf]
+                for p in plist
+            ]
             for term, plist in index.postings.items()
         },
+        "has_positions": index.has_positions,
         "doc_lengths": index.doc_lengths,
         "doc_meta": {
             doc_id: asdict(meta)
@@ -37,16 +47,24 @@ def load_json(path: Path) -> Index:
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    postings = defaultdict(list)
+    postings = {}
     for term, plist in data["postings"].items():
-        postings[term] = [Posting(doc_id, tf) for doc_id, tf in plist]
+        postings[term] = [
+            Posting(item[0], item[1], tuple(item[2]) if len(item) > 2 else ()) for item in plist
+        ]
 
     doc_lengths = {int(k): v for k, v in data["doc_lengths"].items()}
     doc_meta = {int(k): DocMeta(**v) for k, v in data["doc_meta"].items()}
 
-    return Index(postings=postings, doc_lengths=doc_lengths, doc_meta=doc_meta)
+    return Index(
+        postings=postings,
+        doc_lengths=doc_lengths,
+        doc_meta=doc_meta,
+        has_positions=data.get("has_positions", False),
+    )
 
 
+@timed
 def save(index: Index, path: Path, fmt: str = "pickle") -> None:
     if fmt == "pickle":
         save_pickle(index, path)
@@ -56,6 +74,7 @@ def save(index: Index, path: Path, fmt: str = "pickle") -> None:
         raise ValueError(f"Unknown format: {fmt}")
 
 
+@timed
 def load(path: Path, fmt: str = "pickle") -> Index:
     if fmt == "pickle":
         return load_pickle(path)
@@ -66,7 +85,8 @@ def load(path: Path, fmt: str = "pickle") -> Index:
 
 
 if __name__ == "__main__":
-    root = Path("data/dota2wiki.jsonl")
+    import sys
+    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/dota2wiki.jsonl")
     index = build_index(root)
 
     for fmt, filename in [("pickle", "index.bin"), ("json", "index.json")]:

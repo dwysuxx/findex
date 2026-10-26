@@ -1,0 +1,12 @@
+[
+  {"query": "remnant", "relevant": ["storm_spirit", "ember_spirit", "earth_spirit", "void_spirit"]},
+  {"query": "illusion OR illusions", "relevant": ["phantom_lancer", "naga_siren", "terrorblade", "chaos_knight", "shadow_demon"]},
+  {"query": "silence", "relevant": ["silencer", "death_prophet", "skywrath_mage", "drow_ranger", "night_stalker"]},
+  {"query": "ice OR frost", "relevant": ["crystal_maiden", "lich", "ancient_apparition", "winter_wyvern", "tusk", "jakiro"]},
+  {"query": "poison", "relevant": ["venomancer", "viper", "dazzle"]},
+  {"query": "\"meat hook\"", "relevant": ["pudge"]},
+  {"query": "global", "relevant": ["zeus", "spectre", "silencer", "nature_s_prophet", "ancient_apparition"]},
+  {"query": "invisibility OR invisible", "relevant": ["riki", "clinkz", "weaver", "bounty_hunter", "nyx_assassin", "templar_assassin"]},
+  {"query": "\"mana burn\" OR \"mana break\"", "relevant": ["anti_mage", "nyx_assassin"]},
+  {"query": "blink", "relevant": ["anti_mage", "queen_of_pain"]}
+]
