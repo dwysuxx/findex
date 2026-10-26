@@ -11,3 +11,12 @@ index.json
 _m4_tmp.bin
 _tmp_index.*
 .idea/
+
+dist/
+.coverage
+coverage.xml
+htmlcov/
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
+idx.bin

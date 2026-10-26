@@ -18,6 +18,7 @@ import time
 import tracemalloc
 from array import array
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -39,8 +40,12 @@ class SlotPosting:
     tf: int
 
 
-def build_objects(root: Path, cls) -> dict:
-    postings: dict[str, list] = defaultdict(list)
+type ObjPostings = dict[str, list[PlainPosting]] | dict[str, list[SlotPosting]]
+type ArrayPostings = dict[str, tuple[array[int], array[int]]]
+
+
+def build_objects[P: (PlainPosting, SlotPosting)](root: Path, cls: type[P]) -> dict[str, list[P]]:
+    postings: defaultdict[str, list[P]] = defaultdict(list)
     for doc_id, doc in enumerate(iter_documents(root)):
         for term, tf in Counter(tokenize(doc.text or "")).items():
             postings[term].append(cls(doc_id, tf))
@@ -48,8 +53,8 @@ def build_objects(root: Path, cls) -> dict:
 
 
 # --- variant 3: no objects, two parallel array('I') per term ----------------
-def build_arrays(root: Path) -> dict:
-    postings: dict[str, tuple[array, array]] = {}
+def build_arrays(root: Path) -> ArrayPostings:
+    postings: ArrayPostings = {}
     for doc_id, doc in enumerate(iter_documents(root)):
         for term, tf in Counter(tokenize(doc.text or "")).items():
             pair = postings.get(term)
@@ -60,14 +65,35 @@ def build_arrays(root: Path) -> dict:
     return postings
 
 
-VARIANTS = {
-    "`list[Posting]`, plain `@dataclass`": lambda r: build_objects(r, PlainPosting),
-    "`list[Posting]`, `slots=True`": lambda r: build_objects(r, SlotPosting),
+type Builder = Callable[[Path], ObjPostings | ArrayPostings]
+
+
+def _plain(root: Path) -> ObjPostings:
+    return build_objects(root, PlainPosting)
+
+
+def _slots(root: Path) -> ObjPostings:
+    return build_objects(root, SlotPosting)
+
+
+VARIANTS: dict[str, Builder] = {
+    "`list[Posting]`, plain `@dataclass`": _plain,
+    "`list[Posting]`, `slots=True`": _slots,
     "`array('I')` pairs (doc_ids, tfs)": build_arrays,
 }
 
 
-def measure(name: str, build, root: Path, tmp: Path) -> tuple[str, float, float, float, int]:
+def count_postings(postings: ObjPostings | ArrayPostings) -> int:
+    total = 0
+    for v in postings.values():
+        total += len(v[0]) if isinstance(v, tuple) else len(v)  # звуження: пара масивів чи список
+    return total
+
+
+type Row = tuple[str, float, float, float, int]
+
+
+def measure(name: str, build: Builder, root: Path, tmp: Path) -> Row:
     gc.collect()
     tracemalloc.start()
     postings = build(root)
@@ -77,7 +103,7 @@ def measure(name: str, build, root: Path, tmp: Path) -> tuple[str, float, float,
     with open(tmp, "wb") as f:
         pickle.dump(postings, f, protocol=pickle.HIGHEST_PROTOCOL)
     size = tmp.stat().st_size
-    n_post = sum(len(v) if isinstance(v, list) else len(v[0]) for v in postings.values())
+    n_post = count_postings(postings)
     del postings
     gc.collect()
 
@@ -100,10 +126,12 @@ def main(root: Path) -> None:
     print()
     for name, peak, *_ in rows[1:]:
         print(f"{name}: {base / peak:.2f}× менше пікової пам'яті, ніж plain dataclass")
-    print("\nПам'ятка (розмір одного елемента, байт): "
-          f"int={sys.getsizeof(1000)}, plain Posting shallow={sys.getsizeof(PlainPosting(1, 1))} "
-          f"+ __dict__={sys.getsizeof(PlainPosting(1, 1).__dict__)}, "
-          f"slots Posting={sys.getsizeof(SlotPosting(1, 1))}, array('I') item=4")
+    print(
+        "\nПам'ятка (розмір одного елемента, байт): "
+        f"int={sys.getsizeof(1000)}, plain Posting shallow={sys.getsizeof(PlainPosting(1, 1))} "
+        f"+ __dict__={sys.getsizeof(PlainPosting(1, 1).__dict__)}, "
+        f"slots Posting={sys.getsizeof(SlotPosting(1, 1))}, array('I') item=4"
+    )
 
 
 if __name__ == "__main__":

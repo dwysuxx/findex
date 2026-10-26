@@ -24,13 +24,13 @@ class Node:
     """Базовий вузол. Оператори будують дерево, тож запит можна скласти без рядка:
     Term('python') & (Term('async') | Term('await')) & ~Term('java')"""
 
-    def __and__(self, other):
+    def __and__(self, other: object) -> "Node":
         return And(self, other) if isinstance(other, Node) else NotImplemented
 
-    def __or__(self, other):
+    def __or__(self, other: object) -> "Node":
         return Or(self, other) if isinstance(other, Node) else NotImplemented
 
-    def __invert__(self):
+    def __invert__(self) -> "Node":
         return Not(self)
 
     def evaluate(self, index: Index) -> set[int]:
@@ -38,6 +38,10 @@ class Node:
 
     def terms(self) -> list[str]:
         """Терми, що беруть участь в оцінці (під NOT — жодних)."""
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        """Рядок запиту, який parse() перетворить назад на ТЕ САМЕ дерево (дужки — явно)."""
         raise NotImplementedError
 
 
@@ -50,6 +54,9 @@ class Term(Node):
 
     def terms(self) -> list[str]:
         return [self.text]
+
+    def __str__(self) -> str:
+        return self.text
 
 
 def _follow(a: list[int] | tuple[int, ...], b: list[int] | tuple[int, ...]) -> list[int]:
@@ -87,16 +94,19 @@ class Phrase(Node):
         if not index.has_positions:
             raise ValueError(
                 "Фразові запити потребують індексу з positions: "
-                "python -m findex.index <корпус> --positions --out index.bin"
+                "findex index <корпус> --positions --out index.bin"
             )
         per_word = [{p.doc_id: p.positions for p in index.get(w, ())} for w in self.words]
         if any(not d for d in per_word):
             return set()
-        candidates = set.intersection(*(set(d) for d in per_word))
+        candidates = set(per_word[0]).intersection(*per_word[1:])
         return {doc for doc in candidates if has_phrase([d[doc] for d in per_word])}
 
     def terms(self) -> list[str]:
         return list(self.words)
+
+    def __str__(self) -> str:
+        return '"' + " ".join(self.words) + '"'
 
 
 @dataclass(frozen=True)
@@ -110,6 +120,9 @@ class And(Node):
     def terms(self) -> list[str]:
         return self.left.terms() + self.right.terms()
 
+    def __str__(self) -> str:
+        return f"({self.left} AND {self.right})"
+
 
 @dataclass(frozen=True)
 class Or(Node):
@@ -122,6 +135,9 @@ class Or(Node):
     def terms(self) -> list[str]:
         return self.left.terms() + self.right.terms()
 
+    def __str__(self) -> str:
+        return f"({self.left} OR {self.right})"
+
 
 @dataclass(frozen=True)
 class Not(Node):
@@ -132,6 +148,9 @@ class Not(Node):
 
     def terms(self) -> list[str]:
         return []
+
+    def __str__(self) -> str:
+        return f"NOT {self.operand}"
 
 
 # --- лексер ---------------------------------------------------------------------------

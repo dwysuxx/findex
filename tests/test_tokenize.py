@@ -1,29 +1,37 @@
+import pytest
+
 from findex.tokenize import tokenize
 
 
-def test_basic_case():
-    assert list(tokenize("Hello World")) == ["hello", "world"]
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("Hello World", ["hello", "world"]),
+        ("", []),
+        ("   \n\t ", []),
+        ("!!! ??? ,,,", []),
+        ("STRASSE Hello", ["strasse", "hello"]),
+        ("Straße", ["strasse"]),  # casefold, а не lower: ß -> ss
+        ("Привет Мир", ["привет", "мир"]),
+        ("Ґанок, ЇЖАК і є", ["ґанок", "їжак", "і", "є"]),
+        ("Anti-Mage", ["anti", "mage"]),
+        ("19 + 1.6", ["19", "1", "6"]),
+        ("snake_case word", ["snake_case", "word"]),
+        ("été", ["été"]),  # NFD -> NFC: «e + наголос» склеюється в одну літеру
+        ("ﬁle", ["file"]),  # лігатура ﬁ: casefold розкладає її на f + i
+        ("日本語 テキスト", ["日本語", "テキスト"]),
+        ("emoji 🙂 here", ["emoji", "here"]),
+        # регресія з Hypothesis: casefold("İ") = "i" + U+0307; знак лишається в токені
+        ("İstanbul", ["i̇stanbul"]),
+        ("İA", ["i̇a"]),
+        ("ǰ", ["ǰ"]),  # casefold розкладає, NFC після нього складає назад
+        ("́abc", ["abc"]),  # осиротілий знак на початку не стає токеном
+    ],
+)
+def test_tokenize(text: str, expected: list[str]) -> None:
+    assert list(tokenize(text)) == expected
 
 
-def test_empty_string():
-    assert list(tokenize("")) == []
-
-
-def test_mixed_case():
-    assert list(tokenize("STRASSE Hello")) == ["strasse", "hello"]
-
-
-def test_cyrillic():
-    assert list(tokenize("Привет Мир")) == ["привет", "мир"]
-
-
-def test_punctuation_only():
-    assert list(tokenize("!!! ??? ,,,")) == []
-
-
-def test_hyphenated_word_splits():
-    assert list(tokenize("Anti-Mage")) == ["anti", "mage"]
-
-
-def test_decimal_number_splits():
-    assert list(tokenize("19 + 1.6")) == ["19", "1", "6"]
+def test_tokenize_is_lazy() -> None:
+    it = tokenize("a b c")
+    assert next(it) == "a"  # генератор, а не список

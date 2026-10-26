@@ -1,20 +1,21 @@
+"""Lab 01: та сама статистика, але жадібно (усе в пам'яті) — для порівняння піку пам'яті."""
+
+import sys
 import time
 import tracemalloc
-from pathlib import Path
 from collections import Counter
-from findex.corpus import iter_documents
+from pathlib import Path
+
+from findex.corpus import Document, iter_documents
 from findex.tokenize import tokenize
 
 
-def eager_load_documents(root):
+def eager_load_documents(root: Path) -> list[Document]:
     return list(iter_documents(root))
 
 
-def eager_tokenize_all(docs):
-    result = []
-    for doc in docs:
-        result.append(list(tokenize(doc.text)))
-    return result
+def eager_tokenize_all(docs: list[Document]) -> list[list[str]]:
+    return [list(tokenize(doc.text or "")) for doc in docs]
 
 
 def main_eager(root: Path) -> None:
@@ -27,16 +28,14 @@ def main_eager(root: Path) -> None:
     counter = Counter(all_tokens_flat)
 
     elapsed = time.perf_counter() - start
-    current, peak = tracemalloc.get_traced_memory()
+    _, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
 
-    print(sum(counter.values()))
+    print(counter.total())
     print(len(counter))
-    print(f"Время: {elapsed:.2f}с")
-    print(f"Пик памяти: {peak / 1024 / 1024:.2f} МБ")
+    print(f"Час: {elapsed:.2f} с")
+    print(f"Пік пам'яті: {peak / 1024 / 1024:.2f} МБ")
 
 
 if __name__ == "__main__":
-    import sys
-    root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/dota2wiki.jsonl")
-    main_eager(root)
+    main_eager(Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/dota2wiki.jsonl"))

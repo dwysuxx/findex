@@ -1,22 +1,21 @@
 """Сніпети: вікно ±width символів навколо найкращого збігу з підсвіткою термів.
 
-Працює й без positions: шукаємо слова в оригінальному тексті тим самим \\w+ та
-нормалізацією (NFC + casefold), що й токенайзер, тому відображається оригінальний регістр.
+Працює й без positions: шукаємо слова в оригінальному тексті тим самим регулярним виразом і
+нормалізацією, що й токенайзер, тому відображається оригінальний регістр.
 """
 
+import contextlib
 import json
 import logging
-import re
-import unicodedata
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
+from typing import BinaryIO
+
+from findex.tokenize import WORD as _WORD
+from findex.tokenize import normalize as _normalize
 
 log = logging.getLogger(__name__)
-_WORD = re.compile(r"\w+")
-
-
-def _normalize(word: str) -> str:
-    return unicodedata.normalize("NFC", word).casefold()
 
 
 class TextStore:
@@ -25,26 +24,24 @@ class TextStore:
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path)
         self._offsets: dict[str, int] | None = None
-        self._fh = None
+        self._fh: BinaryIO | None = None
 
-    def _build(self) -> None:
+    def _build(self) -> dict[str, int]:
         offsets: dict[str, int] = {}
         pos = 0
         with self.path.open("rb") as f:
             for line in f:
                 if line.strip():
-                    try:
+                    with contextlib.suppress(ValueError, KeyError):  # биті рядки пропускає й corpus.py
                         offsets[str(json.loads(line.decode("utf-8", "replace"))["id"])] = pos
-                    except (ValueError, KeyError):
-                        pass
                 pos += len(line)
-        self._offsets = offsets
+        return offsets
 
     def get(self, doc_id: str) -> str | None:
         try:
             if self._offsets is None:
-                self._build()
-            offset = self._offsets.get(doc_id)  # type: ignore[union-attr]
+                self._offsets = self._build()  # тепер pyright знає, що це dict, без ignore
+            offset = self._offsets.get(doc_id)
             if offset is None:
                 return None
             if self._fh is None:
@@ -62,7 +59,7 @@ class TextStore:
             self._fh = None
 
 
-def make_snippet(text: str, terms: set[str] | list[str], width: int = 80, mark: str = "**") -> str:
+def make_snippet(text: str, terms: Iterable[str], width: int = 80, mark: str = "**") -> str:
     """Вікно ~2*width символів із найбільшою кількістю РІЗНИХ термів запиту; збіги в **...**."""
     wanted = set(terms)
     hits = [(m.start(), m.end(), _normalize(m.group())) for m in _WORD.finditer(text)]
@@ -98,7 +95,8 @@ def make_snippet(text: str, terms: set[str] | list[str], width: int = 80, mark: 
         if sp != -1:
             hi = sp
 
-    out, cursor = [], lo
+    out: list[str] = []
+    cursor = lo
     for start, end, _ in hits:
         if start >= lo and end <= hi:
             out.append(text[cursor:start])

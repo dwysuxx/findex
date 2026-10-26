@@ -1,9 +1,10 @@
 import json
 import pickle
 import time
-from dataclasses import asdict
 from pathlib import Path
-from findex.index import Index, Posting, DocMeta, build_index
+from typing import TypedDict
+
+from findex.index import DocMeta, Format, Index, Posting, build_index
 from findex.utils import timed
 
 
@@ -20,52 +21,61 @@ def load_pickle(path: Path) -> Index:
     # from a network or an untrusted user. For untrusted data use json
     # (see load_json) or a purpose-built binary format.
     with open(path, "rb") as f:
-        return pickle.load(f)
+        obj = pickle.load(f)  # Any: pickle не знає типу
+    if not isinstance(obj, Index):
+        raise TypeError(f"{path} містить {type(obj).__name__}, а не Index")
+    return obj
+
+
+class DocMetaJSON(TypedDict):
+    title: str
+    path: str
+
+
+class IndexJSON(TypedDict):
+    """Форма JSON-файлу. Постінг — плаский список [doc_id, tf, *positions].
+    Ключі doc_lengths/doc_meta — рядки: JSON не має int-ключів."""
+
+    postings: dict[str, list[list[int]]]
+    has_positions: bool
+    doc_lengths: dict[str, int]
+    doc_meta: dict[str, DocMetaJSON]
 
 
 def save_json(index: Index, path: Path) -> None:
-    data = {
+    data: IndexJSON = {
         "postings": {
-            term: [
-                [p.doc_id, p.tf, list(p.positions)] if p.positions else [p.doc_id, p.tf]
-                for p in plist
-            ]
-            for term, plist in index.postings.items()
+            term: [[p.doc_id, p.tf, *p.positions] for p in plist] for term, plist in index.postings.items()
         },
         "has_positions": index.has_positions,
-        "doc_lengths": index.doc_lengths,
-        "doc_meta": {
-            doc_id: asdict(meta)
-            for doc_id, meta in index.doc_meta.items()
-        },
+        "doc_lengths": {str(k): v for k, v in index.doc_lengths.items()},
+        "doc_meta": {str(k): {"title": m.title, "path": m.path} for k, m in index.doc_meta.items()},
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f)
 
 
 def load_json(path: Path) -> Index:
-    with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    with open(path, encoding="utf-8") as f:
+        data: IndexJSON = json.load(f)  # довіряємо формі, бо файл писали ми (save_json)
 
-    postings = {}
-    for term, plist in data["postings"].items():
-        postings[term] = [
-            Posting(item[0], item[1], tuple(item[2]) if len(item) > 2 else ()) for item in plist
-        ]
-
+    postings = {
+        term: [Posting(row[0], row[1], tuple(row[2:])) for row in plist]
+        for term, plist in data["postings"].items()
+    }
     doc_lengths = {int(k): v for k, v in data["doc_lengths"].items()}
-    doc_meta = {int(k): DocMeta(**v) for k, v in data["doc_meta"].items()}
+    doc_meta = {int(k): DocMeta(v["title"], v["path"]) for k, v in data["doc_meta"].items()}
 
     return Index(
         postings=postings,
         doc_lengths=doc_lengths,
         doc_meta=doc_meta,
-        has_positions=data.get("has_positions", False),
+        has_positions=data["has_positions"],
     )
 
 
 @timed
-def save(index: Index, path: Path, fmt: str = "pickle") -> None:
+def save(index: Index, path: Path, fmt: Format = "pickle") -> None:
     if fmt == "pickle":
         save_pickle(index, path)
     elif fmt == "json":
@@ -75,7 +85,7 @@ def save(index: Index, path: Path, fmt: str = "pickle") -> None:
 
 
 @timed
-def load(path: Path, fmt: str = "pickle") -> Index:
+def load(path: Path, fmt: Format = "pickle") -> Index:
     if fmt == "pickle":
         return load_pickle(path)
     elif fmt == "json":
@@ -86,10 +96,12 @@ def load(path: Path, fmt: str = "pickle") -> Index:
 
 if __name__ == "__main__":
     import sys
+
     root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/dota2wiki.jsonl")
     index = build_index(root)
 
-    for fmt, filename in [("pickle", "index.bin"), ("json", "index.json")]:
+    targets: list[tuple[Format, str]] = [("pickle", "index.bin"), ("json", "index.json")]
+    for fmt, filename in targets:
         p = Path(filename)
 
         t0 = time.perf_counter()

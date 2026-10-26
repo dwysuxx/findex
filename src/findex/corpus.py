@@ -1,16 +1,18 @@
 import json
 import logging
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterator
 
 log = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True, slots=True)
 class Document:
     doc_id: str
     path: Path
     text: str | None
+
 
 def iter_documents(root: Path) -> Iterator[Document]:
     """
@@ -20,7 +22,7 @@ def iter_documents(root: Path) -> Iterator[Document]:
     Returns:
         Iterator[Document]: An iterator of Document objects
     """
-    with root.open(encoding="utf-8", errors='replace') as f:
+    with root.open(encoding="utf-8", errors="replace") as f:
         for line_number, line in enumerate(f, start=1):
             if not line.strip():
                 continue

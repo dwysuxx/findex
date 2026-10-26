@@ -1,20 +1,74 @@
 [project]
 name = "findex"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.4.0"
+description = "Маленький пошуковий рушій: інвертований індекс, BM25/TF-IDF, мова запитів, CLI"
 readme = "README.md"
 requires-python = ">=3.12"
+authors = [{ name = "liadenko", email = "liadenko.ik@gmail.com" }]
+keywords = ["search", "inverted-index", "bm25", "cli"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Environment :: Console",
+    "Topic :: Text Processing :: Indexing",
+    "Typing :: Typed",
+]
 dependencies = [
-    "counter>=1.0.0",
-    "record>=4.2",
+    "rich>=15.0.0",
+    "typer>=0.27.3",
 ]
 
+[project.scripts]
+findex = "findex.cli:app"
+
+[project.urls]
+Repository = "https://github.com/dwysuxx/findex"
+
 [build-system]
-requires = ["uv_build>=0.12.10,<0.13.0"]
+requires = ["uv_build>=0.13.0,<0.14.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-exclude = ["**/.idea/**", "**/__pycache__/**"]
+wheel-exclude = ["**/.idea/**", "**/__pycache__/**"]
 
 [dependency-groups]
 dev = [
+    "hypothesis>=6.170.12",
+    "pyright>=1.1.414",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "ruff>=0.16.6",
+]
+
+[tool.pyright]
+include = ["src"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["slow: тести довші за секунду (вимкнути: -m 'not slow')"]
+
+[tool.coverage.run]
+source = ["findex"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_also = [
+    'if __name__ == "__main__":',  # демо-запуски модулів; CLI тестується через CliRunner
+    "except PackageNotFoundError:",  # лише при запуску з сирців без встановлення
+]
+
+[tool.ruff]
+line-length = 110
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "RUF001", "RUF002", "RUF003",  # кирилиця в рядках/коментарях — навмисно
+    "E501",  # довжину коду тримає ruff format; довгі рядки-литерали (таблиці markdown) не ріжемо
 ]

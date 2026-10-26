@@ -5,18 +5,30 @@ Index — це Mapping[str, list[Posting]]: len(), in, [], for, repr() прац�
 `postings`, `doc_lengths`, `doc_meta`.
 """
 
+import logging
 import time
 import tracemalloc
 from collections import Counter, defaultdict
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import cached_property
+from itertools import islice
 from pathlib import Path
+from typing import Literal
 
-from findex.corpus import iter_documents
+from findex.corpus import Document, iter_documents
 from findex.tokenize import tokenize
 from findex.utils import timed
+
+log = logging.getLogger(__name__)
+
+type Format = Literal["pickle", "json"]
+
+
+def guess_format(path: Path | str) -> Format:
+    """index.json -> json, усе інше -> pickle."""
+    return "json" if Path(path).suffix == ".json" else "pickle"
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +74,19 @@ class Index(Mapping[str, list[Posting]]):
     def __contains__(self, term: object) -> bool:
         return term in self.postings  # швидше за версію з Mapping (без створення списку)
 
+    def __eq__(self, other: object) -> bool:
+        """Повна рівність (не лише postings, як дав би Mapping): потрібна для round-trip тестів."""
+        if not isinstance(other, Index):
+            return NotImplemented
+        return (
+            self.postings == other.postings
+            and self.doc_lengths == other.doc_lengths
+            and self.doc_meta == other.doc_meta
+            and self.has_positions == other.has_positions
+        )
+
+    __hash__ = None  # type: ignore[assignment]  # змінний контейнер: рівність за вмістом, не хешується
+
     def __repr__(self) -> str:
         if self._closed:
             return "Index(closed)"
@@ -102,7 +127,7 @@ class Index(Mapping[str, list[Posting]]):
 
 
 @contextmanager
-def open_index(path: Path | str, fmt: str = "pickle"):
+def open_index(path: Path | str, fmt: Format | None = None) -> Generator[Index]:
     """with open_index(p) as ix: ... — завантажує індекс і гарантовано закриває його.
 
     Усе до `yield` — це __enter__, усе після — __exit__; `finally` виконається
@@ -110,7 +135,7 @@ def open_index(path: Path | str, fmt: str = "pickle"):
     """
     from findex.store import load  # імпорт всередині: store імпортує index
 
-    index = load(Path(path), fmt)
+    index = load(Path(path), fmt or guess_format(path))
     try:
         yield index
     finally:
@@ -118,14 +143,21 @@ def open_index(path: Path | str, fmt: str = "pickle"):
 
 
 @timed
-def build_index(root: Path, positions: bool = False) -> Index:
-    """Будує індекс за один потоковий прохід. positions=True додає зміщення токенів
-    (потрібні для фразових запитів; індекс стає помітно більшим)."""
+def build_index(root: Path, positions: bool = False, limit: int | None = None) -> Index:
+    """Будує індекс за один потоковий прохід по файлу корпусу (I/O — тут, логіка — нижче)."""
+    return build_from_documents(islice(iter_documents(root), limit), positions=positions)
+
+
+def build_from_documents(docs: Iterable[Document], positions: bool = False) -> Index:
+    """Чиста логіка побудови: будь-який Iterable документів -> Index.
+
+    positions=True додає зміщення токенів (потрібні для фраз; індекс стає помітно більшим).
+    """
     postings: dict[str, list[Posting]] = defaultdict(list)
     doc_lengths: dict[int, int] = {}
     doc_meta: dict[int, DocMeta] = {}
 
-    for internal_id, doc in enumerate(iter_documents(root)):
+    for internal_id, doc in enumerate(docs):
         tokens = list(tokenize(doc.text or ""))
         doc_lengths[internal_id] = len(tokens)
         doc_meta[internal_id] = DocMeta(title=doc.doc_id, path=str(doc.path))
@@ -140,10 +172,11 @@ def build_index(root: Path, positions: bool = False) -> Index:
             for term, tf in Counter(tokens).items():
                 postings[term].append(Posting(internal_id, tf))
 
+    log.info("indexed %d docs, %d terms", len(doc_lengths), len(postings))
     return Index(postings, doc_lengths, doc_meta, has_positions=positions)
 
 
-def load_or_build(path: Path | str, fmt: str = "pickle", positions: bool = False) -> Index:
+def load_or_build(path: Path | str, fmt: Format = "pickle", positions: bool = False) -> Index:
     """.jsonl -> побудувати індекс; інакше завантажити збережений файл."""
     path = Path(path)
     if path.suffix == ".jsonl":

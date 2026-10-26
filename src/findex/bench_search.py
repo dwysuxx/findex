@@ -9,13 +9,13 @@ import timeit
 from pathlib import Path
 
 from findex.index import build_index
-from findex.search import and_merge, and_set, get_doc_ids
+from findex.search import MergeFn, and_merge, and_set, get_doc_ids
 
 NUMBER = 20_000
 REPEAT = 5
 
 
-def measure_us(fn, a: list[int], b: list[int]) -> float:
+def measure_us(fn: MergeFn, a: list[int], b: list[int]) -> float:
     """Время одного вызова fn(a, b) в микросекундах."""
     times = timeit.repeat(lambda: fn(a, b), number=NUMBER, repeat=REPEAT)
     return min(times) / NUMBER * 1e6
@@ -49,10 +49,7 @@ def main(root: Path) -> None:
         t_merge = measure_us(and_merge, a, b)
         t_set = measure_us(and_set, a, b)
         winner = "merge" if t_merge < t_set else "set"
-        print(
-            f"| {name} | {x}, {y} | {len(a)} и {len(b)} "
-            f"| {t_merge:.2f} | {t_set:.2f} | {winner} |"
-        )
+        print(f"| {name} | {x}, {y} | {len(a)} и {len(b)} | {t_merge:.2f} | {t_set:.2f} | {winner} |")
 
 
 if __name__ == "__main__":

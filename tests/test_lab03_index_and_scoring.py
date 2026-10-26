@@ -22,7 +22,9 @@ DOCS = [
 @pytest.fixture
 def corpus(tmp_path):
     path = tmp_path / "c.jsonl"
-    path.write_text("\n".join(json.dumps({"id": f"d{i}", "text": t}) for i, t in enumerate(DOCS)), encoding="utf-8")
+    path.write_text(
+        "\n".join(json.dumps({"id": f"d{i}", "text": t}) for i, t in enumerate(DOCS)), encoding="utf-8"
+    )
     return path
 
 
@@ -107,7 +109,10 @@ def test_rare_term_outranks_common_term(index):
 
 def test_bm25_saturation_and_length_normalisation():
     bm = BM25()
-    gain = lambda tf: bm.term_score(tf + 1, 5, 100, 1000, 100) - bm.term_score(tf, 5, 100, 1000, 100)
+
+    def gain(tf: int) -> float:
+        return bm.term_score(tf + 1, 5, 100, 1000, 100) - bm.term_score(tf, 5, 100, 1000, 100)
+
     assert gain(1) > gain(5) > gain(20) > 0
     assert gain(20) < 0.01 * bm.term_score(1, 5, 100, 1000, 100)
     short = bm.term_score(1, 5, 20, 1000, 100)

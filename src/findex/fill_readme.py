@@ -14,13 +14,13 @@ import tracemalloc
 from pathlib import Path
 
 from findex.bench_search import measure_us
-from findex.index import DocMeta, Posting, build_index
-from findex.memory_study import PlainPosting, SlotPosting, VARIANTS, measure
+from findex.index import Format, Index, build_index
+from findex.memory_study import VARIANTS, Row, SlotPosting, measure
 from findex.search import and_merge, and_set, get_doc_ids
 from findex.store import load, save
 
 
-def sec_index(root: Path):
+def sec_index(root: Path) -> tuple[str, Index]:
     tracemalloc.start()
     t0 = time.perf_counter()
     idx = build_index(root)
@@ -33,7 +33,7 @@ def sec_index(root: Path):
     ), idx
 
 
-def sec_bench(idx) -> str:
+def sec_bench(idx: Index) -> str:
     p = idx.postings
     by_len = sorted(p, key=lambda t: len(p[t]), reverse=True)
     common, rare = by_len[:2], by_len[-2:]
@@ -42,41 +42,59 @@ def sec_bench(idx) -> str:
         "рідкий + рідкий": (rare[0], rare[1]),
         "частий + рідкий": (common[0], rare[0]),
     }
-    out = ["| Пара | Терміни | Довжини списків | merge (мкс) | set (мкс) | Швидше |", "|---|---|---|---|---|---|"]
+    out = [
+        "| Пара | Терміни | Довжини списків | merge (мкс) | set (мкс) | Швидше |",
+        "|---|---|---|---|---|---|",
+    ]
     for name, (x, y) in pairs.items():
         a, b = get_doc_ids(p, x), get_doc_ids(p, y)
         assert and_merge(a, b) == and_set(a, b)
         tm, ts = measure_us(and_merge, a, b), measure_us(and_set, a, b)
-        out.append(f"| {name} | {x}, {y} | {len(a)} і {len(b)} | {tm:.2f} | {ts:.2f} | {'merge' if tm < ts else 'set'} |")
+        out.append(
+            f"| {name} | {x}, {y} | {len(a)} і {len(b)} | {tm:.2f} | {ts:.2f} | {'merge' if tm < ts else 'set'} |"
+        )
     return "\n".join(out)
 
 
-def sec_store(idx) -> str:
+def sec_store(idx: Index) -> str:
     out = ["| Формат | Розмір файлу, МБ | Save, с | Load, с |", "|---|---|---|---|"]
-    for fmt, label, name in [("pickle", "pickle (`HIGHEST_PROTOCOL`)", "_tmp_index.bin"), ("json", "json", "_tmp_index.json")]:
+    formats: list[tuple[Format, str, str]] = [
+        ("pickle", "pickle (`HIGHEST_PROTOCOL`)", "_tmp_index.bin"),
+        ("json", "json", "_tmp_index.json"),
+    ]
+    for fmt, label, name in formats:
         path = Path(name)
-        t0 = time.perf_counter(); save(idx, path, fmt); ts = time.perf_counter() - t0
-        t0 = time.perf_counter(); loaded = load(path, fmt); tl = time.perf_counter() - t0
+        t0 = time.perf_counter()
+        save(idx, path, fmt)
+        ts = time.perf_counter() - t0
+        t0 = time.perf_counter()
+        loaded = load(path, fmt)
+        tl = time.perf_counter() - t0
         assert loaded.postings == idx.postings and loaded.doc_lengths == idx.doc_lengths
         out.append(f"| {label} | {path.stat().st_size / 2**20:.2f} | {ts:.3f} | {tl:.3f} |")
         path.unlink()
     return "\n".join(out)
 
 
-def sec_memory(root: Path):
+def sec_memory(root: Path) -> tuple[str, int, list[Row]]:
     rows = [measure(n, b, root, Path("_m4_tmp.bin")) for n, b in VARIANTS.items()]
-    out = ["| Postings representation | Peak memory (build), МБ | Index file size, МБ | Load time, с |", "|---|---|---|---|"]
+    out = [
+        "| Postings representation | Peak memory (build), МБ | Index file size, МБ | Load time, с |",
+        "|---|---|---|---|",
+    ]
     for name, peak, size, load_t, _ in rows:
         out.append(f"| {name} | {peak:.2f} | {size:.2f} | {load_t:.4f} |")
     base = rows[0][1]
     out.append("")
-    out.append("Пік пам'яті порівняно з plain dataclass: "
-               + ", ".join(f"{n}: **{base / pk:.2f}×** менше" for n, pk, *_ in rows[1:])
-               + ".")
+    out.append(
+        "Пік пам'яті порівняно з plain dataclass: "
+        + ", ".join(f"{n}: **{base / pk:.2f}×** менше" for n, pk, *_ in rows[1:])
+        + "."
+    )
     return "\n".join(out), rows[0][4], rows
 
 
-def sec_sizes(rows, n_post: int) -> str:
+def sec_sizes(rows: list[Row], n_post: int) -> str:
     """N× рахуємо з розмірів об'єктів та ВИМІРЯНОЇ різниці plain проти slots.
 
     getsizeof(obj.__dict__) не використовуємо: у сучасному CPython __dict__ створюється
@@ -103,7 +121,7 @@ def sec_sizes(rows, n_post: int) -> str:
 
 
 def fill(text: str, name: str, body: str) -> str:
-    pat = re.compile(rf"(<!-- BEGIN:{name} -->\n).*?(\n<!-- END:{name} -->)", re.S)
+    pat = re.compile(rf"(<!-- BEGIN:{name} -->\n).*?(\n<!-- END:{name} -->)", re.DOTALL)
     assert pat.search(text), f"немає маркерів {name}"
     return pat.sub(lambda m: m.group(1) + body + m.group(2), text)
 

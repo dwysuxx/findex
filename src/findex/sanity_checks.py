@@ -1,14 +1,14 @@
 """Три sanity-перевірки BM25 на вашому корпусі (виводить markdown для README).
 
-    python -m findex.sanity_checks data/dota2wiki.jsonl        # побудує індекс
-    python -m findex.sanity_checks index.bin                   # або завантажить збережений
+python -m findex.sanity_checks data/dota2wiki.jsonl        # побудує індекс
+python -m findex.sanity_checks index.bin                   # або завантажить збережений
 """
 
 import argparse
 from pathlib import Path
 
 from findex.engine import Searcher
-from findex.index import Index, Posting, load_or_build
+from findex.index import Format, Index, Posting, load_or_build
 from findex.ranking import BM25, TfIdf
 
 
@@ -26,11 +26,16 @@ def check_rare_vs_common(index: Index, bm25: BM25) -> None:
     print("|---|---|---|---|")
     for label, t in (("рідкісний", rare), ("поширений", common)):
         df = index.df(t)
-        print(f"| {label}: `{t}` | {df} | {bm25.idf(df, n):.3f} | {bm25.term_score(1, df, avg, n, avg):.3f} |")
+        print(
+            f"| {label}: `{t}` | {df} | {bm25.idf(df, n):.3f} | {bm25.term_score(1, df, avg, n, avg):.3f} |"
+        )
 
     with Searcher(index, bm25) as s:
         results = s.search(f"{rare} OR {common}", k=5, snippets=False)
-    tf = lambda term, doc: next((p.tf for p in index[term] if p.doc_id == doc), 0)
+
+    def tf(term: str, doc: int) -> int:
+        return next((p.tf for p in index[term] if p.doc_id == doc), 0)
+
     print(f"\nЗапит `{rare} OR {common}`, top-5:\n")
     print(f"| # | doc | score | tf(`{rare}`) | tf(`{common}`) |")
     print("|---|---|---|---|---|")
@@ -56,7 +61,9 @@ def check_saturation(index: Index, bm25: BM25) -> None:
         print(f"| {tf} | {bm:.3f} | {(bm - prev) / (tf - prev_tf):+.3f} | {ti:.3f} |")
         prev, prev_tf = bm, tf
     limit = bm25.idf(df, n) * (bm25.k1 + 1)
-    print(f"\nГраниця при tf→∞: idf·(k1+1) = {limit:.3f}. Приріст від 20-го до 21-го входження майже нульовий.\n")
+    print(
+        f"\nГраниця при tf→∞: idf·(k1+1) = {limit:.3f}. Приріст від 20-го до 21-го входження майже нульовий.\n"
+    )
 
 
 def check_length_norm(index: Index, bm25: BM25) -> None:
@@ -87,7 +94,7 @@ def check_length_norm(index: Index, bm25: BM25) -> None:
     print("\nПри b=0 довжина документа ігнорується — оцінки рівні.\n")
 
 
-def main(path: Path, fmt: str) -> None:
+def main(path: Path, fmt: Format) -> None:
     index = load_or_build(path, fmt)
     bm25 = BM25()
     print(f"{index!r}, avg_doc_length={index.avg_doc_length:.1f}\n")

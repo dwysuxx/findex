@@ -11,19 +11,23 @@
 
 import argparse
 import json
+import logging
+from collections.abc import Sequence
 from pathlib import Path
 
 from findex.engine import Searcher
-from findex.index import load_or_build
+from findex.index import Format, load_or_build
 from findex.ranking import BM25, SearchResult, TfIdf
 
+log = logging.getLogger(__name__)
 
-def precision_at_k(results: list[SearchResult], relevant: set[str], k: int) -> float:
+
+def precision_at_k(results: Sequence[SearchResult], relevant: set[str], k: int) -> float:
     """Частка релевантних у top-k. Знаменник завжди k: коротка видача не «підвищує» точність."""
     return sum(1 for r in results[:k] if r.title in relevant) / k
 
 
-def main(path: Path, queries_path: Path, k: int, fmt: str, suggest: bool) -> None:
+def main(path: Path, queries_path: Path, k: int, fmt: Format, suggest: bool) -> None:
     index = load_or_build(path, fmt, positions=True)
     queries = json.loads(queries_path.read_text(encoding="utf-8"))
     scorers = {"TF-IDF": TfIdf(), "BM25": BM25()}
@@ -36,15 +40,16 @@ def main(path: Path, queries_path: Path, k: int, fmt: str, suggest: bool) -> Non
                 print(f"- `{r.title}`  {r.snippet}")
         return
 
-    rows, sums = [], {name: 0.0 for name in scorers}
+    rows: list[str] = []
+    sums = {name: 0.0 for name in scorers}
     labeled = 0
     for item in queries:
         relevant = {str(x) for x in item.get("relevant", [])}
         if not relevant:
-            print(f"# пропущено (немає розмітки): {item['query']!r}")
+            log.warning("пропущено (немає розмітки): %r", item["query"])
             continue
         labeled += 1
-        cells = []
+        cells: list[str] = []
         for name, searcher in searchers.items():
             p = precision_at_k(searcher.search(item["query"], k=k, snippets=False), relevant, k)
             sums[name] += p
@@ -55,7 +60,11 @@ def main(path: Path, queries_path: Path, k: int, fmt: str, suggest: bool) -> Non
     print("|---|---|" + "---|" * len(scorers))
     print("\n".join(rows))
     if labeled:
-        print(f"| **середнє ({labeled} запитів)** | | " + " | ".join(f"**{sums[n] / labeled:.2f}**" for n in scorers) + " |")
+        print(
+            f"| **середнє ({labeled} запитів)** | | "
+            + " | ".join(f"**{sums[n] / labeled:.2f}**" for n in scorers)
+            + " |"
+        )
 
 
 if __name__ == "__main__":

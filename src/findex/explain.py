@@ -10,6 +10,8 @@
 
 import math
 from functools import singledispatch
+from types import FunctionType
+from typing import Any
 
 from findex.index import Index
 from findex.query import And, Node, Not, Or, Phrase, Term
@@ -17,11 +19,8 @@ from findex.ranking import BM25, Scorer, TfIdf
 
 
 @singledispatch
-def explain(obj, *args, **kwargs) -> str:
-    """Запасна реалізація. Будь-який Scorer (навіть звичайна функція) пояснюється за термами,
-    але без розкладу формули — її ми не знаємо."""
-    if callable(obj) and len(args) == 3:
-        return _explain_generic(obj, *args)
+def explain(obj: object, *args: Any, **kwargs: Any) -> str:  # Any: кожна реалізація має свою сигнатуру
+    """Базова реалізація: тип, для якого нічого не зареєстровано."""
     raise TypeError(f"explain() не вміє пояснювати {type(obj).__name__}")
 
 
@@ -88,7 +87,8 @@ def _posting(index: Index, term: str, doc_id: int):
 def _(scorer: BM25, index: Index, doc_id: int, terms: list[str]) -> str:
     n, avg, dl = index.num_docs, index.avg_doc_length, index.doc_length(doc_id)
     norm = 1.0 - scorer.b + scorer.b * (dl / avg if avg else 1.0)
-    lines, total = [], 0.0
+    lines: list[str] = []
+    total = 0.0
     for term in dict.fromkeys(terms):
         p = _posting(index, term, doc_id)
         if p is None:
@@ -102,14 +102,17 @@ def _(scorer: BM25, index: Index, doc_id: int, terms: list[str]) -> str:
             f"  {idf * tfn:.3f} = {term!r}: idf {idf:.3f} (df={df}, N={n})"
             f" × tf_norm {tfn:.3f} (tf={p.tf}, k1={scorer.k1})"
         )
-    lines.append(f"  довжина: dl={dl}, avgdl={avg:.1f}, b={scorer.b} → norm = 1 − b + b·dl/avgdl = {norm:.3f}")
+    lines.append(
+        f"  довжина: dl={dl}, avgdl={avg:.1f}, b={scorer.b} → norm = 1 − b + b·dl/avgdl = {norm:.3f}"
+    )
     return "\n".join([_header(scorer, index, doc_id, total), *lines])
 
 
 @explain.register
 def _(scorer: TfIdf, index: Index, doc_id: int, terms: list[str]) -> str:
     n = index.num_docs
-    lines, total = [], 0.0
+    lines: list[str] = []
+    total = 0.0
     for term in dict.fromkeys(terms):
         p = _posting(index, term, doc_id)
         if p is None:
@@ -122,8 +125,12 @@ def _(scorer: TfIdf, index: Index, doc_id: int, terms: list[str]) -> str:
     return "\n".join([_header(scorer, index, doc_id, total), *lines])
 
 
+@explain.register(FunctionType)
 def _explain_generic(scorer: Scorer, index: Index, doc_id: int, terms: list[str]) -> str:
-    lines, total = [], 0.0
+    """Scorer-функція: внески по термах без розкладу формули (формули ми не знаємо).
+    Реєструємо на FunctionType, а не на Callable: pyright не приймає ABC-спецформу в register()."""
+    lines: list[str] = []
+    total = 0.0
     for term in dict.fromkeys(terms):
         p = _posting(index, term, doc_id)
         s = scorer(term, p, index) if p is not None else 0.0

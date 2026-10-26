@@ -1,10 +1,249 @@
 # findex — пошуковий рушій по Dota 2 wiki
 
+[![CI](https://github.com/dwysuxx/findex/actions/workflows/ci.yml/badge.svg)](https://github.com/dwysuxx/findex/actions/workflows/ci.yml)
+
 Корпус: `data/dota2wiki.jsonl`, 124 статті про героїв. Індекс з positions:
 `Index(terms=16_106, docs=124, positions=True)`, середня довжина документа 4220 токенів.
 
+- [Lab 04 — Typing, Testing, Packaging, CLI](#lab-04--typing-testing-packaging-cli)
 - [Lab 03 — Ranking and the Object Model](#lab-03--ranking-and-the-object-model)
 - [Lab 02 — The Inverted Index](#lab-02--the-inverted-index)
+
+---
+
+# Lab 04 — Typing, Testing, Packaging, CLI
+
+`findex` — встановлюваний пакет з командою `findex`: pyright strict без помилок, 118 тестів
+(з них 6 Hypothesis-властивостей), CLI на typer + rich, логування в stderr, CI на GitHub Actions.
+
+## L4.1 Встановлення
+
+```bash
+# з релізу на GitHub (wheel, прикріплений до v0.4.0)
+uv tool install https://github.com/dwysuxx/findex/releases/download/v0.4.0/findex-0.4.0-py3-none-any.whl
+
+# або з локального wheel / сирців
+uv build                                   # -> dist/findex-0.4.0-py3-none-any.whl і .tar.gz
+uv tool install dist/findex-0.4.0-py3-none-any.whl
+uv tool install .                          # прямо з репозиторію
+
+findex --version                           # findex 0.4.0
+
+# розробка: середовище з lockfile (uv.lock закомічено)
+uv sync
+```
+
+## L4.2 CLI
+
+```bash
+findex index data/dota2wiki.jsonl --out index.bin --positions     # rich progress bar у stderr
+findex index data/dota2wiki.jsonl -o small.json --limit 20        # формат за розширенням
+findex search index.bin '"meat hook" OR rot' --k 5                # таблиця з підсвіченими сніпетами
+findex search index.bin pudge --scorer tfidf --explain            # + дерево запиту і розклад score
+findex search index.bin pudge --json | jq -r .title               # JSON lines у stdout
+findex stats index.bin --top 10                                   # числа Lab 01, гарно
+findex stats index.bin --json
+findex -v  search ...     # INFO   (розмір кешу)
+findex -vv search ...     # DEBUG  (@timed, cache HIT/MISS)
+python -m findex ...      # те саме без встановлення
+```
+
+```
+$ findex search index.bin '"meat hook" OR rot' -k 2
+                       "meat hook" OR rot — bm25, top-2
+┌───┬────────┬───────────────┬────────────────────────────────────────────────┐
+│ # │  score │ документ      │ сніпет                                         │
+├───┼────────┼───────────────┼────────────────────────────────────────────────┤
+│ 1 │ 26.013 │ pudge         │ …throw of Pudge's signature Meat Hook strikes  │
+│   │        │               │ fear into his foes. Disoriented, his foe       │
+│   │        │               │ stumbles, gagging on a sudden stench of Rot .  │
+│   │        │               │ As it looks up at the…                         │
+├───┼────────┼───────────────┼────────────────────────────────────────────────┤
+│ 2 │  3.787 │ dragon_knight │ …and frail, its wings tattered, its few        │
+│   │        │               │ remaining scales stricken with scale-rot, its  │
+│   │        │               │ fangs ground to nubs, and its fire-gouts no    │
+│   │        │               │ more threatening than a…                       │
+└───┴────────┴───────────────┴────────────────────────────────────────────────┘
+
+$ findex search index.bin pudge -k 2 --json --no-snippets
+{"rank": 1, "doc_id": 13, "title": "pudge", "score": 8.141226}
+{"rank": 2, "doc_id": 91, "title": "slark", "score": 3.465375}
+```
+
+(У терміналі збіги в сніпетах підсвічені жовтим.)
+
+**Правила виводу.** У stdout ідуть лише дані (таблиця або JSON). Прогрес-бар, логи й помилки
+пишуться в stderr. Очікувані помилки дають один рядок і код виходу 1, без traceback:
+
+```
+$ findex search nope.bin x            ; echo $?
+Помилка: файл індексу не знайдено: nope.bin
+1
+$ findex search index.bin '(pudge'    ; echo $?
+Помилка: помилка в запиті '(pudge': немає закриваючої дужки
+1
+$ findex search README.md pudge
+Помилка: не вдалося прочитати індекс README.md (UnpicklingError): invalid load key, '#'.
+$ findex search small.bin '"meat hook"'      # індекс без --positions
+Помилка: Фразові запити потребують індексу з positions: findex index <корпус> --positions --out index.bin
+```
+
+Неправильне значення опції (`--scorer nope`) — помилка використання typer/click, код 2.
+
+```
+$ findex -vv search index.bin pudge --repeat 2 -k 1 --no-snippets >/dev/null
+DEBUG    findex.utils: load took 284.84 ms
+DEBUG    findex.utils: Searcher._rank_ids took 0.07 ms
+DEBUG    findex.engine: query='pudge' k=1 cache=MISS
+DEBUG    findex.utils: Searcher.search took 1.33 ms
+DEBUG    findex.engine: query='pudge' k=1 cache=HIT
+DEBUG    findex.utils: Searcher.search took 0.60 ms
+INFO     findex.cli: cache: CacheInfo(hits=1, misses=1, maxsize=256, currsize=1)
+```
+
+## L4.3 M1 — типізація (pyright strict)
+
+`[tool.pyright] typeCheckingMode = "strict"`, `include = ["src"]`: **0 errors**. Що зроблено:
+
+- `Scorer` — `typing.Protocol`. `BM25`, `TfIdf` і звичайна функція з тією самою сигнатурою
+  задовольняють його без успадкування.
+- Генератори повертають `Iterator[...]` (`tokenize`, `iter_documents`), а приймають `Iterable[...]`
+  (`build_from_documents`, `count_tokens`). `@contextmanager`-функції повертають `Generator[Index]`.
+- `Literal`: `Format = Literal["pickle", "json"]`, `Engine = Literal["merge", "set"]`,
+  `ScorerName = Literal["bm25", "tfidf"]`. typer за тими самими анотаціями будує вибір значень
+  і перевіряє його.
+- PEP 695: `def timed[**P, R](fn: Callable[P, R]) -> Callable[P, R]` зберігає сигнатуру
+  декорованої функції. `build_objects[P: (PlainPosting, SlotPosting)]`, псевдоніми `type Postings = ...`.
+- `TypedDict` описує форму JSON-файлу індексу (`IndexJSON`, `DocMetaJSON`). `@overload` на
+  `ResultList.__getitem__`: `int -> SearchResult`, `slice -> ResultList`.
+- Звуження (narrowing): `load_pickle` перевіряє `isinstance(obj, Index)` (pickle повертає `Any`),
+  `TextStore` присвоює `self._offsets = self._build()` замість `# type: ignore`.
+
+Усі винятки з перевірки, кожен з причиною в коді:
+
+| Де | Що | Чому |
+|---|---|---|
+| `engine.py` | `pyright: ignore[reportPrivateUsage]` на `functools._CacheInfo` | у типу `cache_info()` немає публічного імені |
+| `index.py`, `ranking.py` | `type: ignore[assignment]` на `__hash__ = None` | змінний контейнер з `__eq__` не хешується (як `list`); typeshed чекає метод |
+| `explain.py` | `*args: Any` у базовій `@singledispatch`-функції | кожна зареєстрована реалізація має свою сигнатуру |
+| `cli.py` | `Literal` через звичайне присвоєння, а не `type X = ...` | typer читає анотації під час виконання і не розгортає `TypeAliasType` |
+
+## L4.4 M2 — тести
+
+`uv run pytest`: **118 passed** (≈ 4.5 с). `uv run pytest -m "not slow"`: 114 тестів за ≈ 2 с.
+
+| Файл | Що перевіряє |
+|---|---|
+| `tests/conftest.py` | фікстури: крихітний корпус на диску (`scope="session"`), `tiny_index` (лише читати), `fresh_index` (на кожен тест), збережений файл індексу |
+| `test_tokenize.py` | параметризована таблиця на 19 випадків: кирилиця, `ß→ss`, NFD→NFC, лігатура `ﬁ`, CJK, emoji, `İ` |
+| `test_corpus.py` | биті рядки jsonl пропускаються з WARNING і номером рядка (`caplog`); `count_tokens` = `index_stats` |
+| `test_merge_and_store.py` | merge-алгоритми проти set-версій, булевий пошук Lab 02 на обох движках, round trip pickle/json × positions, інваріанти індексу |
+| `test_lab03_*.py` | dunder-методи, `open_index` при винятку, скорери й три sanity-перевірки, парсер (рівність дерев), кеш, `@timed` + `wraps`, `ResultList`, `explain` |
+| `test_properties.py` | **6 Hypothesis-властивостей** (нижче) |
+| `test_cli.py` | `typer.testing.CliRunner`: усі підкоманди, `--json` (stdout містить лише JSON, логи у stderr), cache HIT у лозі, коди виходу 1 і 2 |
+| `test_real_corpus.py` | `@pytest.mark.slow`: справжній корпус — три sanity-перевірки, P@5 (BM25 ≥ TF-IDF ≥ 0.4), скрипти звітів для README |
+
+**Hypothesis-властивості:**
+
+1. **Оракул:** `and_merge / or_merge / not_merge` дорівнюють `sorted(set(a) & | - set(b))` для будь-яких відсортованих списків.
+2. **Ідемпотентність:** `tokenize(" ".join(tokenize(t))) == tokenize(t)`, порожніх токенів немає.
+3. **Слово — один токен:** рядок із самих літер дає рівно один токен.
+4. **Round trip:** `load(save(index)) == index` для довільного корпусу, обох форматів, з positions і без.
+5. **Парсер:** `parse(str(tree)) == tree` для випадкових дерев `Term/Phrase/And/Or/Not`.
+6. **BM25:** score строго зростає за tf і не перевищує `idf·(k1+1)` за будь-якого `b ∈ [0, 1]`.
+
+**Що знайшов Hypothesis.** Властивість 3 одразу впала, і Hypothesis звів приклад до
+**`"İA"` → `["i", "a"]`**. `"İ".casefold()` дає `"i" + U+0307` (комбінуючу крапку), а `\w` у Python
+комбінуючі знаки не матчить. Тому `İstanbul` у старому токенайзері розпадався на `i` і `stanbul`,
+а `ǰ` втрачав гачек. Виправлено: після `casefold` ще раз NFC, а слово — це
+`\w[\w<комбінуючі знаки>]*`. Нормалізацію спільно використовують токенайзер і сніпети. Регресійні
+приклади додано в `test_tokenize.py`. Ідемпотентність (властивість 2) цього бага не ловила: вона
+виконувалась і для поламаного токенайзера.
+
+### Покриття
+
+`uv run pytest --cov=findex` (branch coverage, блоки `if __name__ == "__main__":` виключено):
+**79 %** загалом.
+
+| Модуль | Покриття | | Модуль | Покриття |
+|---|---|---|---|---|
+| `tokenize`, `corpus`, `engine`, `utils` | 100 % | | `search` (Lab 02) | 85 % |
+| `explain`, `cli`, `query`, `sanity_checks` | 97–98 % | | `evaluate` | 75 % |
+| `store` | 96 % | | `stats` | 61 % |
+| `index`, `ranking` | 93 % | | `bench_search`, `memory_study`, `fill_readme`, `eager_stats` | 0 % |
+| `snippets` | 88 % | | | |
+
+**Що не покрито і чому:**
+
+- `bench_search`, `memory_study`, `fill_readme`, `eager_stats` — дослідницькі скрипти Lab 01–02
+  (бенчмарки, вимірювання пам'яті, заповнення таблиць README). Вони міряють час і пам'ять на
+  реальному корпусі й нічого не повертають. Тест на них перевіряв би лише «не впало» і робив би
+  набір повільним і нестабільним. Pyright strict їх перевіряє.
+- `stats.main`, `evaluate --suggest` — друк для людини поверх уже протестованих чистих функцій
+  (`count_tokens`, `index_stats`, `precision_at_k`).
+- Решта пропусків — гілки обробки рідкісних помилок (зіпсований рядок у `TextStore`, порожній
+  індекс у `avg_doc_length`) і рядки старого парсера Lab 02 з неповним запитом (`a AND`).
+
+## L4.5 M3 — пакет
+
+`pyproject.toml` (PEP 621): метадані, `dependencies = [rich, typer]`, група `dev` (pytest,
+pytest-cov, hypothesis, pyright, ruff), `[project.scripts] findex = "findex.cli:app"`,
+налаштування `[tool.pyright]`, `[tool.pytest.ini_options]` (маркер `slow`, `--strict-markers`),
+`[tool.coverage]` і `[tool.ruff]`. Backend — `uv_build`, `src/`-layout, `py.typed`. Версія `0.4.0`
+(semver). `uv.lock` закомічено.
+
+## L4.6 M4 — логування, CI, реліз
+
+- **Логування.** У кожному модулі `log = logging.getLogger(__name__)`. Налаштовується один раз,
+  у `cli.main` (`RichHandler` → stderr; `-v` → INFO, `-vv` → DEBUG). Повідомлення — у лінивому
+  `%`-форматі. `@timed` логує на DEBUG. `print` лишився тільки там, де він і є виводом:
+  дані CLI та markdown-звіти скриптів (`sanity_checks`, `evaluate`, бенчмарки).
+- **CI** (`.github/workflows/ci.yml`, на push і PR):
+  - job `lint`: `uv sync --locked` → `ruff check` → `ruff format --check` → `pyright`;
+  - job `test`: матриця Ubuntu/Windows × Python 3.12/3.14, `pytest --cov` (з `slow`-тестами);
+  - smoke-тест зібраного wheel через `uvx --from dist/*.whl findex ...`.
+- **Реліз:** тег `v0.4.0`, wheel і sdist прикріплено до GitHub Release.
+
+## L4.7 Рефлексія (коротко)
+
+1. Під час виконання анотації ніхто не перевіряє. Їх читають інструменти: pyright/mypy (до запуску,
+   в CI), IDE (автодоповнення). Деякі бібліотеки читають їх під час виконання: dataclasses
+   (поля), typer (`k: int = 10` → опція `--k` з валідацією), FastAPI/Pydantic.
+2. Звуження: після перевірки тип змінної уточнюється. `def f(x: str | None): return x.upper()`:
+   pyright скаже `"upper" is not a known attribute of "None"`. Після `if x is None: return ""`
+   тип `x` уже `str`. У коді так зроблено з `pickle.load` (`isinstance`) і з `TextStore._offsets`.
+3. Приймати `Iterable` (потрібен лише цикл, підійде список, генератор, `islice`), повертати
+   `Iterator` (точно: генератор можна передати в `next()`, але лише один раз).
+4. Протокол — структурний тип. Pyright порівнює члени: якщо в класу є `__call__(term: str,
+   posting: Posting, index: Index) -> float` із сумісними типами, клас — `Scorer`. Успадкування
+   не потрібне.
+5. Scope визначає, як часто створюється фікстура (function / module / session). Якщо один тест
+   змінить або закриє session-фікстуру `tiny_index`, тести після нього побачать зіпсований індекс.
+   Результат залежатиме від порядку тестів. Тому є окрема `fresh_index` на кожен тест.
+6. «Для будь-яких відсортованих `a`, `b`: `and_merge(a, b) == sorted(set(a) & set(b))`». Коли
+   властивість падає, Hypothesis зменшує контрприклад до мінімального: замість рядка з 40 символів
+   — `"İA"`, по якому одразу видно причину.
+7. `src/`-layout: `import findex` у тестах бере встановлений пакет, а не теку поруч. Плоска
+   структура дозволяє тестам проходити на сирцях, навіть якщо в wheel чогось бракує (файл не
+   увійшов у пакет, забута залежність).
+8. `[project.scripts]` створює виконуваний файл у `bin/` (на Windows — `Scripts\findex.exe`):
+   маленьку обгортку, яка імпортує `findex.cli` і викликає `app()`. Запис про нього — в
+   `entry_points.txt` у `.dist-info`.
+9. `log.info("n=%d", n)` форматує рядок лише тоді, коли рівень увімкнено. f-рядок обчислюється
+   завжди, навіть якщо повідомлення відкинуть. Крім того, шаблон лишається однаковим, і
+   агрегатори логів можуть групувати за ним.
+
+## L4.8 Статус
+
+- [x] `pyproject.toml` (PEP 621): залежності, група `dev`, `[project.scripts]`, налаштування інструментів; `uv.lock` закомічено
+- [x] pyright strict: 0 помилок; кожен ignore з причиною
+- [x] `Scorer` — `typing.Protocol`; генератори типізовано через `Iterator`/`Iterable`
+- [x] 118 тестів, 6 Hypothesis-властивостей, `conftest.py`, маркер `slow`, покриття в README
+- [x] `findex index|search|stats` на typer + rich; `--json`; `-v/-vv`; ненульові коди виходу
+- [x] `logging` усюди; налаштування в `cli.py`; діагностика у stderr
+- [x] CI workflow і бейдж; wheel на релізі `v0.4.0`
+- [x] Git-тег `lab-04`
+- [ ] Stretch (shell completion, `findex config`, free-threaded матриця, TestPyPI) — не виконано
 
 ---
 
@@ -21,7 +260,7 @@
 | `findex/ranking.py` | **M2**: протокол `Scorer`, `TfIdf`, `BM25(k1=1.5, b=0.75)`, `SearchResult(order=True)`, `rank()` з `heapq.nlargest`; **Stretch**: `ResultList(Sequence)` |
 | `findex/query.py` | **M3**: лексер + рекурсивний спуск → дерево `Term` / `Phrase` / `And` / `Or` / `Not`, оператори `&` `\|` `~`, `evaluate(index)` |
 | `findex/utils.py` | **M4**: декоратор `@timed` (з `functools.wraps`) |
-| `findex/engine.py` | **M4**: `Searcher` — розбір → збіги → ранжування (з `lru_cache(maxsize=256)`) → сніпети; CLI |
+| `findex/engine.py` | **M4**: `Searcher` — розбір → збіги → ранжування (з `lru_cache(maxsize=256)`) → сніпети |
 | `findex/snippets.py` | **M4**: вікно ±80 символів навколо найкращого збігу, підсвітка `**терм**` |
 | `findex/sanity_checks.py` | три sanity-перевірки ранжування (вивід — markdown нижче) |
 | `findex/evaluate.py` | precision@5 для TF-IDF і BM25 за `tests/eval_queries.json` |
@@ -34,16 +273,14 @@
 # індекс з positions (потрібні для фраз)
 uv run python -m findex.index data/dota2wiki.jsonl --positions --out index.bin
 
-# пошук: -v вмикає DEBUG-логи @timed і cache HIT/MISS
-uv run python -m findex.engine index.bin 'silence NOT silencer' -k 3 --repeat 2 -v
-uv run python -m findex.engine index.bin '"meat hook" OR (rot AND dismember)' --scorer tfidf
+# пошук (з Lab 04 — через CLI `findex`): -vv вмикає DEBUG-логи @timed і cache HIT/MISS
+uv run findex -vv search index.bin 'silence NOT silencer' -k 3 --repeat 2
+uv run findex search index.bin '"meat hook" OR (rot AND dismember)' --scorer tfidf
 
 uv run python -m findex.sanity_checks index.bin
 uv run python -m findex.evaluate data/dota2wiki.jsonl tests/eval_queries.json
 # дерево запиту + розклад score кожного результату
-uv run python -m findex.engine index.bin 'meat hook' -k 1 --scorer tfidf --explain
-
-uv run pytest -q          # 52 passed
+uv run findex search index.bin 'meat hook' -k 1 --scorer tfidf --explain
 ```
 
 ## L3.3 M1 — `Index` як об'єкт
@@ -264,7 +501,7 @@ BM25 трохи краще: на `silence` і `global` нормалізація 
 внесків дорівнює score з пошуку.
 
 ```
-$ python -m findex.engine index.bin 'pudge OR (meat hook) NOT "blink dagger" OR rot' -k 2 --explain
+$ findex search index.bin 'pudge OR (meat hook) NOT "blink dagger" OR rot' -k 2 --explain   # вивід Lab 03
 OR
 ├── TERM pudge
 ├── AND

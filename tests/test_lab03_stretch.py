@@ -21,7 +21,9 @@ DOCS = [
 @pytest.fixture
 def index(tmp_path):
     path = tmp_path / "c.jsonl"
-    path.write_text("\n".join(json.dumps({"id": f"d{i}", "text": t}) for i, t in enumerate(DOCS)), encoding="utf-8")
+    path.write_text(
+        "\n".join(json.dumps({"id": f"d{i}", "text": t}) for i, t in enumerate(DOCS)), encoding="utf-8"
+    )
     return build_index(path, positions=True)
 
 

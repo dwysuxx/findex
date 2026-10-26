@@ -1,17 +1,25 @@
-import time
 import argparse
+import time
 import tracemalloc
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Literal
+
+from findex.index import Posting
 from findex.store import load
 from findex.tokenize import tokenize
 
+type Postings = Mapping[str, Sequence[Posting]]
+type MergeFn = Callable[[list[int], list[int]], list[int]]
+type Engine = Literal["merge", "set"]
 
-def get_doc_ids(postings: dict, term: str) -> list[int]:
+
+def get_doc_ids(postings: Postings, term: str) -> list[int]:
     return [p.doc_id for p in postings.get(term, [])]
 
 
 def and_merge(a: list[int], b: list[int]) -> list[int]:
-    result = []
+    result: list[int] = []
     i, j = 0, 0
     while i < len(a) and j < len(b):
         if a[i] == b[j]:
@@ -26,7 +34,7 @@ def and_merge(a: list[int], b: list[int]) -> list[int]:
 
 
 def or_merge(a: list[int], b: list[int]) -> list[int]:
-    result = []
+    result: list[int] = []
     i, j = 0, 0
     while i < len(a) and j < len(b):
         if a[i] == b[j]:
@@ -45,7 +53,7 @@ def or_merge(a: list[int], b: list[int]) -> list[int]:
 
 
 def not_merge(a: list[int], b: list[int]) -> list[int]:
-    result = []
+    result: list[int] = []
     i, j = 0, 0
     while i < len(a) and j < len(b):
         if a[i] == b[j]:
@@ -72,7 +80,7 @@ def not_set(a: list[int], b: list[int]) -> list[int]:
     return sorted(set(a) - set(b))
 
 
-def term_ids(postings: dict, word: str, and_fn) -> list[int]:
+def term_ids(postings: Postings, word: str, and_fn: MergeFn) -> list[int]:
     toks = list(tokenize(word))
     if not toks:
         return []
@@ -82,20 +90,22 @@ def term_ids(postings: dict, word: str, and_fn) -> list[int]:
     return result
 
 
-def search(query: str, postings: dict, doc_lengths: dict, engine: str = 'merge') -> list[int]:
+def search(
+    query: str, postings: Postings, doc_lengths: Mapping[int, int], engine: Engine = "merge"
+) -> list[int]:
     tokens = query.split()
     if not tokens:
         return []
 
-    if engine == 'set':
-        and_fn, or_fn, not_fn = and_set, or_set, not_set
-    else:
-        and_fn, or_fn, not_fn = and_merge, or_merge, not_merge
+    fns: tuple[MergeFn, MergeFn, MergeFn] = (
+        (and_set, or_set, not_set) if engine == "set" else (and_merge, or_merge, not_merge)
+    )
+    and_fn, or_fn, not_fn = fns
 
     all_docs = list(range(len(doc_lengths)))
 
     idx = 0
-    if tokens[0].upper() == 'NOT':
+    if tokens[0].upper() == "NOT":
         if len(tokens) < 2:
             return []
         current_result = not_fn(all_docs, term_ids(postings, tokens[1], and_fn))
@@ -107,13 +117,13 @@ def search(query: str, postings: dict, doc_lengths: dict, engine: str = 'merge')
     while idx < len(tokens):
         op = tokens[idx].upper()
 
-        if op in ('AND', 'OR'):
+        if op in ("AND", "OR"):
             idx += 1
             if idx >= len(tokens):
                 break
 
             is_not = False
-            if tokens[idx].upper() == 'NOT':
+            if tokens[idx].upper() == "NOT":
                 is_not = True
                 idx += 1
                 if idx >= len(tokens):
@@ -123,13 +133,13 @@ def search(query: str, postings: dict, doc_lengths: dict, engine: str = 'merge')
             if is_not:
                 next_ids = not_fn(all_docs, next_ids)
 
-            if op == 'AND':
+            if op == "AND":
                 current_result = and_fn(current_result, next_ids)
             else:
                 current_result = or_fn(current_result, next_ids)
             idx += 1
 
-        elif op == 'NOT':
+        elif op == "NOT":
             idx += 1
             if idx >= len(tokens):
                 break
@@ -143,12 +153,12 @@ def search(query: str, postings: dict, doc_lengths: dict, engine: str = 'merge')
     return current_result
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("index_path", type=Path, nargs="?", default=Path("index.bin"))
     parser.add_argument("query", type=str, nargs="?", default="dota AND hero")
-    parser.add_argument("--engine", choices=['merge', 'set'], default='merge')
-    parser.add_argument("--format", choices=['pickle', 'json'], default='pickle')
+    parser.add_argument("--engine", choices=["merge", "set"], default="merge")
+    parser.add_argument("--format", choices=["pickle", "json"], default="pickle")
     args = parser.parse_args()
 
     tracemalloc.start()
