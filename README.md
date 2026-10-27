@@ -93,7 +93,7 @@ seeds ─► черги URL по хостах ─► ready: asyncio.Queue[_Host]
   не дає дубля.
 - **Ліміти:** глобальний `asyncio.Semaphore(concurrency)` на запити; per-host — `per_host`
   токенів (і `asyncio.Semaphore(per_host)` як жорстка межа); пауза `min_delay` (або `Crawl-delay`)
-  між стартами на хост; allowlist доменів; бюджет `max_pages` — запитів, а не сторінок, і
+  між стартами на хост (з точністю до кроку годинника циклу: на Windows з Python 3.12 це 15.6 мс — впіймав CI); allowlist доменів; бюджет `max_pages` — запитів, а не сторінок, і
   резервується без `await` між перевіркою та записом, тож перевищити його неможливо (тест: рівно
   17 запитів при `max_pages=17` і 8 воркерах).
 - **Розбір HTML** — у `asyncio.to_thread` (CPU, див. L6.7).

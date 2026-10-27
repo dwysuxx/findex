@@ -150,7 +150,9 @@ async def crawl(
             host.tokens += 1
             host.waiting += 1
             start = max(loop.time(), host.next_start)
-            host.next_start = start + host.delay  # резервуємо слот: старти рознесені на delay
+            # Резервуємо слот: старти рознесені на delay — з точністю до кроку годинника циклу
+            # (на Windows з Python 3.12 monotonic тікає по 15.6 мс; з 3.13 — точний лічильник).
+            host.next_start = start + host.delay
             if start <= loop.time():
                 ready.put_nowait(host)
             else:

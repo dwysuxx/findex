@@ -374,7 +374,9 @@ def test_crawl_min_delay_between_requests() -> None:
     log: list[tuple[str, float]] = []
     asyncio.run(collect(site(graph, log=log), concurrency=4, per_host=4, min_delay=0.05))
     starts = [t for _, t in log]
-    assert all(b - a >= 0.045 for a, b in itertools.pairwise(starts))
+    # Допуск — крок годинника циклу: на Windows з Python 3.12 monotonic тікає по 15.6 мс (впіймав CI).
+    tolerance = time.get_clock_info("monotonic").resolution + 0.005
+    assert all(b - a >= 0.05 - tolerance for a, b in itertools.pairwise(starts))
 
 
 def test_crawl_redirect_to_seen_page_is_not_duplicated() -> None:
