@@ -1,0 +1,96 @@
+=========== 3.14.8 GIL
+5. 3.14.8 (tags/v3.14.8:8e6e75d, Sep 30 2026, 18:19:33) [MSC v.1944 64 bit (AMD64)]
+  Py_GIL_DISABLED (free-threaded build): False
+  sys._is_gil_enabled(): True
+
+1. CPU-bound: sum(i*i for i in range(10**7))
+  once                           0.80 s
+  twice, sequential              1.58 s
+  twice, 2 threads               1.57 s
+  twice, 2 processes             0.98 s
+
+2. shared += 1, 2 threads x 1_000_000 (expected 2_000_000)
+  no lock    5 runs, lost updates: [0, 0, 0, 0, 0]
+  with Lock  5 runs, lost updates: [0, 0, 0, 0, 0]
+
+3. sys.getswitchinterval() = 0.005
+  2 threads, 5 ms                1.65 s
+  2 threads, 0.1 ms              2.00 s
+
+4. ProcessPoolExecutor().submit(lambda: 42)
+  _pickle.PicklingError: Can't pickle local object <function exp_lambda.<locals>.<lambda> at 0x000001B170C01E80>
+
+dis: shared += 1
+  LOAD_GLOBAL    shared
+  LOAD_SMALL_INT 1
+  BINARY_OP      +=
+  STORE_GLOBAL   shared
+
+race: shared Counter, 8 threads, 523_271 tokens
+  no lock       lost updates in 3 runs: [0, 0, 0]
+  local + Lock  lost updates in 3 runs: [0, 0, 0]
+
+=========== 3.13.16 free-threaded
+5. 3.13.16 experimental free-threading build (main, Oct 14 2026, 01:08:33) [MSC v.1944 64 bit (AMD64)]
+  Py_GIL_DISABLED (free-threaded build): True
+  sys._is_gil_enabled(): False
+
+1. CPU-bound: sum(i*i for i in range(10**7))
+  once                           0.76 s
+  twice, sequential              1.56 s
+  twice, 2 threads               0.77 s
+  twice, 2 processes             0.89 s
+
+2. shared += 1, 2 threads x 1_000_000 (expected 2_000_000)
+  no lock    5 runs, lost updates: [983482, 958377, 952080, 976241, 981056]
+  with Lock  5 runs, lost updates: [0, 0, 0, 0, 0]
+
+3. sys.getswitchinterval() = 0.005
+  2 threads, 5 ms                0.76 s
+  2 threads, 0.1 ms              0.77 s
+
+4. ProcessPoolExecutor().submit(lambda: 42)
+  builtins.AttributeError: Can't get local object 'exp_lambda.<locals>.<lambda>'
+
+dis: shared += 1
+  LOAD_GLOBAL    shared
+  LOAD_CONST     1
+  BINARY_OP      +=
+  STORE_GLOBAL   shared
+
+race: shared Counter, 8 threads, 523_271 tokens
+  no lock       lost updates in 3 runs: [9209, 10356, 10283]
+  local + Lock  lost updates in 3 runs: [0, 0, 0]
+
+=========== 3.14.8 free-threaded
+5. 3.14.8 free-threading build (main, Oct 14 2026, 01:09:01) [MSC v.1944 64 bit (AMD64)]
+  Py_GIL_DISABLED (free-threaded build): True
+  sys._is_gil_enabled(): False
+
+1. CPU-bound: sum(i*i for i in range(10**7))
+  once                           0.89 s
+  twice, sequential              1.76 s
+  twice, 2 threads               0.87 s
+  twice, 2 processes             1.07 s
+
+2. shared += 1, 2 threads x 1_000_000 (expected 2_000_000)
+  no lock    5 runs, lost updates: [986788, 988024, 995887, 975829, 991308]
+  with Lock  5 runs, lost updates: [0, 0, 0, 0, 0]
+
+3. sys.getswitchinterval() = 0.005
+  2 threads, 5 ms                0.89 s
+  2 threads, 0.1 ms              0.88 s
+
+4. ProcessPoolExecutor().submit(lambda: 42)
+  _pickle.PicklingError: Can't pickle local object <function exp_lambda.<locals>.<lambda> at 0x000002C49321A680>
+
+dis: shared += 1
+  LOAD_GLOBAL    shared
+  LOAD_SMALL_INT 1
+  BINARY_OP      +=
+  STORE_GLOBAL   shared
+
+race: shared Counter, 8 threads, 523_271 tokens
+  no lock       lost updates in 3 runs: [10053, 10706, 10376]
+  local + Lock  lost updates in 3 runs: [0, 0, 0]
+

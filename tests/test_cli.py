@@ -40,6 +40,17 @@ def test_index_json_format_by_suffix(tiny_corpus: Path, tmp_path: Path) -> None:
     assert "docs=2" in result.stdout
 
 
+@pytest.mark.parametrize("executor", ["serial", "threads", "processes"])
+def test_index_executors_write_same_file(
+    built: Path, tiny_corpus: Path, tmp_path: Path, executor: str
+) -> None:
+    out = tmp_path / "idx.bin"
+    args = ["index", str(tiny_corpus), "-o", str(out), "--positions", "--executor", executor, "-w", "2"]
+    result = runner.invoke(app, args)
+    assert result.exit_code == 0, result.output
+    assert out.read_bytes() == built.read_bytes()
+
+
 def test_search_table(built: Path) -> None:
     result = runner.invoke(app, ["search", str(built), "python java", "--k", "3"])
     assert result.exit_code == 0, result.output

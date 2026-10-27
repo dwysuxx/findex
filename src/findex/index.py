@@ -153,11 +153,27 @@ def build_from_documents(docs: Iterable[Document], positions: bool = False) -> I
 
     positions=True додає зміщення токенів (потрібні для фраз; індекс стає помітно більшим).
     """
+    postings, doc_lengths, doc_meta = index_documents(docs, positions=positions)
+    log.info("indexed %d docs, %d terms", len(doc_lengths), len(postings))
+    return Index(postings, doc_lengths, doc_meta, has_positions=positions)
+
+
+type Postings = dict[str, list[Posting]]
+
+
+def index_documents(
+    docs: Iterable[Document], positions: bool = False, first_id: int = 0
+) -> tuple[Postings, dict[int, int], dict[int, DocMeta]]:
+    """Ядро побудови: документи -> (postings, doc_lengths, doc_meta), doc_id від first_id підряд.
+
+    Спільне для build_from_documents (Lab 02-04) і build_partial (Lab 05): однаковий код
+    гарантує однакові постінги, а від first_id залежить лише нумерація.
+    """
     postings: dict[str, list[Posting]] = defaultdict(list)
     doc_lengths: dict[int, int] = {}
     doc_meta: dict[int, DocMeta] = {}
 
-    for internal_id, doc in enumerate(docs):
+    for internal_id, doc in enumerate(docs, start=first_id):
         tokens = list(tokenize(doc.text or ""))
         doc_lengths[internal_id] = len(tokens)
         doc_meta[internal_id] = DocMeta(title=doc.doc_id, path=str(doc.path))
@@ -172,8 +188,7 @@ def build_from_documents(docs: Iterable[Document], positions: bool = False) -> I
             for term, tf in Counter(tokens).items():
                 postings[term].append(Posting(internal_id, tf))
 
-    log.info("indexed %d docs, %d terms", len(doc_lengths), len(postings))
-    return Index(postings, doc_lengths, doc_meta, has_positions=positions)
+    return dict(postings), doc_lengths, doc_meta
 
 
 def load_or_build(path: Path | str, fmt: Format = "pickle", positions: bool = False) -> Index:

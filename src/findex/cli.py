@@ -1,6 +1,7 @@
 """findex — CLI на typer + rich.
 
     findex index data/dota2wiki.jsonl --out index.bin --positions
+    findex index data/dota2wiki.jsonl -o index.bin --executor threads --workers 4
     findex search index.bin '"meat hook" OR rot' --k 5
     findex search index.bin pudge --json | jq .title
     findex stats index.bin
@@ -12,12 +13,12 @@ stdout — лише дані (таблиця або JSON lines), усе діаг
 
 import json
 import logging
+import os
 import pickle
 import re
-from collections.abc import Generator, Iterator
+from collections.abc import Generator
 from contextlib import ExitStack, contextmanager
 from importlib.metadata import PackageNotFoundError, version
-from itertools import islice
 from pathlib import Path
 from typing import Annotated, Literal, NoReturn
 
@@ -28,10 +29,10 @@ from rich.markup import escape
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from findex.corpus import Document, iter_documents
 from findex.engine import Searcher
 from findex.explain import explain
-from findex.index import Format, Index, build_from_documents, guess_format, open_index
+from findex.index import Format, Index, guess_format, open_index
+from findex.parallel import PartialIndex, build_parallel, choose_executor
 from findex.query import QueryParseError, parse
 from findex.ranking import BM25, Scorer, TfIdf
 from findex.stats import index_stats
@@ -43,6 +44,7 @@ log = logging.getLogger(__name__)
 # і поки не розгортає TypeAliasType. Значення ті самі, що й index.Format.
 ScorerName = Literal["bm25", "tfidf"]
 FormatName = Literal["pickle", "json"]
+ExecutorChoice = Literal["auto", "serial", "threads", "processes"]
 SCORERS: dict[ScorerName, type[BM25] | type[TfIdf]] = {"bm25": BM25, "tfidf": TfIdf}
 
 console = Console()  # stdout: дані
@@ -126,6 +128,13 @@ def index_cmd(
     fmt: Annotated[
         FormatName | None, typer.Option("--format", help="За замовч. — за розширенням --out")
     ] = None,
+    executor: Annotated[
+        ExecutorChoice,
+        typer.Option(help="auto: без GIL — threads; з GIL — processes від 4 МБ, інакше serial"),
+    ] = "auto",
+    workers: Annotated[
+        int | None, typer.Option("--workers", "-w", min=1, help="Скільки воркерів (за замовч. — усі ядра)")
+    ] = None,
 ) -> None:
     """Побудувати індекс із корпусу (з прогрес-баром) і зберегти його."""
     if not corpus.is_file():
@@ -134,9 +143,11 @@ def index_cmd(
         total = sum(1 for line in f if line.strip())
     if limit is not None:
         total = min(total, limit)
+    chosen = choose_executor(corpus.stat().st_size) if executor == "auto" else executor
+    workers = workers or os.cpu_count() or 1
 
     progress = Progress(
-        TextColumn("[bold blue]індексація"),
+        TextColumn(f"[bold blue]індексація ({chosen} x{workers})"),
         BarColumn(),
         MofNCompleteColumn(),
         TimeElapsedColumn(),
@@ -145,12 +156,12 @@ def index_cmd(
     with progress:
         task = progress.add_task("index", total=total)
 
-        def tracked() -> Iterator[Document]:
-            for doc in islice(iter_documents(corpus), limit):
-                yield doc
-                progress.advance(task)
+        def done(part: PartialIndex) -> None:  # викликається в головному потоці, по шматку
+            progress.advance(task, part.chunk.slots)
 
-        index = build_from_documents(tracked(), positions=positions)
+        # Виняток воркера летить звідси з оригінальним traceback — це баг, а не «очікувана помилка».
+        report = build_parallel(corpus, chosen, workers, positions=positions, limit=limit, on_done=done)
+    index = report.index
 
     if index.num_docs == 0:
         _fail(f"у {corpus} немає жодного коректного документа")
