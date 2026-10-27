@@ -1,0 +1,26 @@
+1. Виклик корутинної функції нічого не виконує — як і виклик генераторної
+  one()            -> <coroutine object one at 0x0000028CD6B2C340>
+  gen_one()        -> <generator object gen_one at 0x0000028CD6B2C7C0>
+  asyncio.run(one()) -> 1
+  next(gen_one())  -> 1
+
+2. Три корутини по 1 с
+  await послідовно                    3.02 s
+  TaskGroup + asyncio.sleep           1.01 s
+  TaskGroup + time.sleep              3.00 s
+
+3. TaskGroup: одна задача падає через 0.1 с, інша спить 10 с
+  sleeper: отримав CancelledError — група скасувала сусіда
+  except* ValueError: ExceptionGroup(ValueError('boom'),) через 0.10 s
+
+4. 30 URL з дзеркала (затримка 20 мс): новий клієнт на запит проти одного спільного
+  новий AsyncClient на кожен запит    0.39 s (медіана з 3)
+  один спільний AsyncClient           0.17 s (медіана з 3)
+
+5. asyncio.run(main(), debug=True) з time.sleep(0.5) у корутині
+  asyncio WARNING: Executing <Task finished name='Task-222' coro=<exp5.<locals> ... ers.py:110> took 0.501 seconds
+
+6. 1 000 потоків проти 1 000 задач, кожна «чекає на мережу» 1 с (окремі процеси)
+  threads  wall  1.15 s, +  27.2 МБ RSS
+  tasks    wall  1.03 s, +   1.7 МБ RSS
+

@@ -22,3 +22,5 @@ htmlcov/
 idx.bin
 data/*_x*.jsonl
 .venv-*/
+crawl.log
+data/crawl.jsonl

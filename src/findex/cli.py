@@ -2,6 +2,7 @@
 
     findex index data/dota2wiki.jsonl --out index.bin --positions
     findex index data/dota2wiki.jsonl -o index.bin --executor threads --workers 4
+    findex crawl http://127.0.0.1:8001/ --max-pages 200 --out data/crawl.jsonl   # Lab 06
     findex search index.bin '"meat hook" OR rot' --k 5
     findex search index.bin pudge --json | jq .title
     findex stats index.bin
@@ -11,19 +12,24 @@ stdout — лише дані (таблиця або JSON lines), усе діаг
 Очікувані помилки (немає файлу, синтаксис запиту) — один рядок у stderr і код виходу 1.
 """
 
+import asyncio
+import importlib
 import json
 import logging
 import os
 import pickle
+import queue
 import re
 from collections.abc import Generator
-from contextlib import ExitStack, contextmanager
+from contextlib import ExitStack, aclosing, contextmanager
 from importlib.metadata import PackageNotFoundError, version
+from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
-from typing import Annotated, Literal, NoReturn
+from typing import TYPE_CHECKING, Annotated, Literal, NoReturn, TextIO
 
 import typer
 from rich.console import Console
+from rich.live import Live
 from rich.logging import RichHandler
 from rich.markup import escape
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn
@@ -37,6 +43,9 @@ from findex.query import QueryParseError, parse
 from findex.ranking import BM25, Scorer, TfIdf
 from findex.stats import index_stats
 from findex.store import save
+
+if TYPE_CHECKING:  # findex.crawler тягне httpx (~0.2 с імпорту) — у runtime лише всередині crawl
+    from findex.crawler.crawl import CrawlStats
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +87,9 @@ def _setup_logging(verbosity: int) -> None:
     logging.basicConfig(
         level=level,
         format="%(name)s: %(message)s",
-        handlers=[RichHandler(console=err, show_time=False, show_path=False)],
+        # Рівень на хендлері, а не лише на root: записи нащадків (findex.crawler на INFO для
+        # crawl.log) обходять рівень root-логера, але не рівень його хендлерів.
+        handlers=[RichHandler(level=level, console=err, show_time=False, show_path=False)],
         force=True,  # повторний виклик (тести CliRunner) замінює хендлери, а не додає
     )
 
@@ -170,6 +181,142 @@ def index_cmd(
     except OSError as e:
         _fail(f"не вдалося записати {out}: {e}")
     console.print(f"{index!r} → {out} ({out.stat().st_size / 2**20:.2f} МБ)")
+
+
+@app.command("crawl")
+def crawl_cmd(
+    seeds: Annotated[list[str], typer.Argument(help="Стартові URL (усі — в межах дозволених доменів)")],
+    out: Annotated[Path, typer.Option("--out", "-o", help="jsonl для `findex index`")] = Path(
+        "data/crawl.jsonl"
+    ),
+    max_pages: Annotated[int, typer.Option(min=1, help="Бюджет запитів сторінок")] = 500,
+    concurrency: Annotated[int, typer.Option(min=1, help="Воркерів = макс. запитів одночасно")] = 10,
+    per_host: Annotated[int, typer.Option(min=1, help="Макс. одночасних запитів до одного origin")] = 2,
+    delay: Annotated[float, typer.Option(min=0, help="Мін. пауза між запитами до одного origin, с")] = 0.0,
+    timeout: Annotated[float, typer.Option(min=0.1, help="Таймаут однієї спроби, с")] = 10.0,
+    allow_domain: Annotated[
+        list[str] | None,
+        typer.Option("--allow-domain", help="Дозволений домен (за замовч. — домени seed-ів)"),
+    ] = None,
+    log_file: Annotated[Path, typer.Option("--log", help="Журнал по кожному URL")] = Path("crawl.log"),
+    debug_loop: Annotated[
+        bool, typer.Option("--debug-loop", help="asyncio debug: попередження про блокування циклу > 100 мс")
+    ] = False,
+) -> None:
+    """Ввічливий асинхронний краулер: robots.txt, ліміти на хост, повтори; сторінки -> jsonl."""
+    # Імпорт тут, ДО asyncio.run: findex.crawler.crawl тягне httpx (0.2-0.4 с у холодному процесі),
+    # а імпорт усередині корутини _crawl виконувався б у циклі подій і блокував би його.
+    importlib.import_module("findex.crawler.crawl")
+    from findex.crawler.urls import canonicalize
+
+    for seed in seeds:
+        if canonicalize(seed) is None:
+            _fail(f"не http(s) URL: {seed}")
+    try:
+        stats = asyncio.run(
+            _crawl(seeds, out, max_pages, concurrency, per_host, delay, timeout, allow_domain, log_file),
+            debug=debug_loop,
+        )
+    except OSError as e:
+        _fail(f"не вдалося записати {e.filename}: {e.strerror}")
+    console.print(
+        f"{stats.pages} сторінок → {out} за {stats.elapsed:.1f} с ({stats.pages_per_s:.1f} стор./с), "
+        f"помилок: {stats.errors}, повторів: {stats.retries}; журнал: {log_file}"
+    )
+    if stats.pages == 0:
+        raise typer.Exit(code=1)
+
+
+async def _crawl(
+    seeds: list[str],
+    out: Path,
+    max_pages: int,
+    concurrency: int,
+    per_host: int,
+    delay: float,
+    timeout: float,
+    allow_domain: list[str] | None,
+    log_file: Path,
+) -> "CrawlStats":
+    """Краул -> jsonl, з живою панеллю. Жодного дискового I/O в потоці циклу подій.
+
+    Логування й запис рядків — звичайні синхронні виклики, зазвичай мікросекунди. Але на Windows
+    запис на диск зрідка стоїть сотні мілісекунд (антивірус, кеш диска): `--debug-loop` ловив
+    кроки по 0.35 с саме на `FileHandler` і `flush()`. Тому:
+      - логи: цикл лише кладе запис у чергу (QueueHandler), на диск і в stderr пише потік QueueListener;
+      - jsonl: кожен рядок пишемо через asyncio.to_thread.
+    """
+    from findex.crawler.crawl import CrawlStats, crawl  # уже в sys.modules (див. crawl_cmd) — миттєво
+
+    stats = CrawlStats()
+    file_log = logging.FileHandler(log_file, mode="w", encoding="utf-8")
+    file_log.setFormatter(logging.Formatter("%(asctime)s %(levelname)-7s %(name)s: %(message)s"))
+    file_log.addFilter(lambda r: r.name.startswith(("findex.crawler", "asyncio")))
+    watched = [logging.getLogger("findex.crawler"), logging.getLogger("asyncio")]
+    old_levels = [lg.level for lg in watched]
+    for lg in watched:
+        lg.setLevel(min(lg.getEffectiveLevel(), logging.INFO))
+    root = logging.getLogger()
+    old_handlers = root.handlers[:]
+    records: queue.SimpleQueue[logging.LogRecord] = queue.SimpleQueue()
+    listener = QueueListener(records, file_log, *old_handlers, respect_handler_level=True)
+    root.handlers = [QueueHandler(records)]
+    listener.start()
+
+    def panel() -> Table:
+        t = Table(title="findex crawl", show_header=False, min_width=40)
+        t.add_column(style="bold")
+        t.add_column(justify="right", style="cyan")
+        t.add_row("сторінок", f"{stats.pages} / {max_pages}")
+        t.add_row("стор./с", f"{stats.pages_per_s:.1f}")
+        t.add_row("у польоті", str(stats.in_flight))
+        t.add_row("у черзі", str(stats.queued))
+        t.add_row("помилок / повторів", f"{stats.errors} / {stats.retries}")
+        t.add_row("robots.txt / поза доменом", f"{stats.skipped_robots} / {stats.skipped_offsite}")
+        return t
+
+    def write_line(f: TextIO, line: str) -> None:
+        f.write(line)
+        f.flush()  # перерваний краул лишає на диску все, що встиг завантажити
+
+    try:
+        # Індексації тут немає: краул лише пише jsonl, `findex index` — окремий процес після нього.
+        # auto_refresh=False: rich за замовчуванням перемальовує з власного потоку, а той конкурує
+        # з циклом подій за GIL. Перемальовуємо з самого циклу, окремою задачею (~1-5 мс на кадр).
+        with (
+            out.open("w", encoding="utf-8") as f,
+            Live(get_renderable=panel, console=err, auto_refresh=False) as live,
+        ):
+
+            async def redraw() -> None:
+                while True:
+                    live.refresh()
+                    await asyncio.sleep(0.25)
+
+            pages = crawl(
+                seeds,
+                max_pages=max_pages,
+                concurrency=concurrency,
+                per_host=per_host,
+                min_delay=delay,
+                allowed_domains=allow_domain,
+                timeout=timeout,
+                stats=stats,
+            )
+            async with asyncio.TaskGroup() as tg, aclosing(pages):
+                redrawer = tg.create_task(redraw())
+                async for page in pages:
+                    line = json.dumps(page.to_json(), ensure_ascii=False) + "\n"
+                    await asyncio.to_thread(write_line, f, line)
+                redrawer.cancel()
+            live.refresh()  # фінальний кадр
+    finally:
+        listener.stop()  # дописує все з черги
+        root.handlers = old_handlers
+        for lg, level in zip(watched, old_levels, strict=True):
+            lg.setLevel(level)
+        file_log.close()
+    return stats
 
 
 _MARK = re.compile(r"\*\*(.+?)\*\*")

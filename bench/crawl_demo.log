@@ -1,0 +1,499 @@
+2026-10-27 20:56:04,625 INFO    findex.crawler.crawl: 200 4342B 0.122s attempts=1 http://127.0.0.1:55648/
+2026-10-27 20:56:04,736 INFO    findex.crawler.crawl: 200 28289B 0.106s attempts=1 http://127.0.0.1:55648/wiki/anti_mage
+2026-10-27 20:56:04,781 WARNING findex.crawler.fetch: retry 2/3 in 0.66s (HTTP 503, backoff): http://127.0.0.1:55648/wiki/drow_ranger
+2026-10-27 20:56:04,910 INFO    findex.crawler.crawl: 200 32640B 0.164s attempts=1 http://127.0.0.1:55648/wiki/shadow_fiend
+2026-10-27 20:56:04,979 INFO    findex.crawler.crawl: 200 4356B 0.152s attempts=1 http://127.0.0.1:55649/
+2026-10-27 20:56:05,009 INFO    findex.crawler.crawl: 200 4277B 0.171s attempts=1 http://127.0.0.1:55650/
+2026-10-27 20:56:05,020 INFO    findex.crawler.crawl: 200 4219B 0.160s attempts=1 http://127.0.0.1:55651/
+2026-10-27 20:56:05,040 INFO    findex.crawler.crawl: 200 4268B 0.170s attempts=1 http://127.0.0.1:55652/
+2026-10-27 20:56:05,076 INFO    findex.crawler.crawl: 200 28398B 0.228s attempts=1 http://127.0.0.1:55650/wiki/terrorblade
+2026-10-27 20:56:05,086 INFO    findex.crawler.crawl: 200 34423B 0.168s attempts=1 http://127.0.0.1:55648/wiki/sand_king
+2026-10-27 20:56:05,105 INFO    findex.crawler.crawl: 200 28236B 0.228s attempts=1 http://127.0.0.1:55652/wiki/anti_mage~1
+2026-10-27 20:56:05,134 INFO    findex.crawler.crawl: 200 42377B 0.305s attempts=1 http://127.0.0.1:55649/wiki/axe
+2026-10-27 20:56:05,158 INFO    findex.crawler.crawl: 200 55628B 0.145s attempts=1 http://127.0.0.1:55650/wiki/monkey_king
+2026-10-27 20:56:05,180 INFO    findex.crawler.crawl: 200 29543B 0.193s attempts=1 http://127.0.0.1:55649/wiki/phantom_lancer
+2026-10-27 20:56:05,217 INFO    findex.crawler.crawl: 200 35143B 0.194s attempts=1 http://127.0.0.1:55651/wiki/bloodseeker
+2026-10-27 20:56:05,234 INFO    findex.crawler.crawl: 200 32649B 0.190s attempts=1 http://127.0.0.1:55652/wiki/shadow_fiend~1
+2026-10-27 20:56:05,245 INFO    findex.crawler.crawl: 200 27146B 0.150s attempts=1 http://127.0.0.1:55648/wiki/windranger
+2026-10-27 20:56:05,278 INFO    findex.crawler.crawl: 200 33284B 0.195s attempts=1 http://127.0.0.1:55650/wiki/bane
+2026-10-27 20:56:05,292 INFO    findex.crawler.crawl: 200 30898B 0.180s attempts=1 http://127.0.0.1:55652/wiki/crystal_maiden
+2026-10-27 20:56:05,315 INFO    findex.crawler.crawl: 200 29117B 0.144s attempts=1 http://127.0.0.1:55650/wiki/juggernaut
+2026-10-27 20:56:05,340 INFO    findex.crawler.crawl: 200 27501B 0.196s attempts=1 http://127.0.0.1:55649/wiki/earthshaker
+2026-10-27 20:56:05,350 INFO    findex.crawler.crawl: 200 29306B 0.163s attempts=1 http://127.0.0.1:55649/wiki/storm_spirit
+2026-10-27 20:56:05,386 INFO    findex.crawler.crawl: 200 33686B 0.359s attempts=1 http://127.0.0.1:55651/wiki/mirana
+2026-10-27 20:56:05,397 INFO    findex.crawler.crawl: 200 37269B 0.170s attempts=1 http://127.0.0.1:55651/wiki/pudge
+2026-10-27 20:56:05,416 INFO    findex.crawler.crawl: 200 35198B 0.174s attempts=1 http://127.0.0.1:55652/wiki/morphling
+2026-10-27 20:56:05,452 INFO    findex.crawler.crawl: 200 23282B 0.166s attempts=1 http://127.0.0.1:55650/wiki/puck
+2026-10-27 20:56:05,469 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55650/wiki/sven
+2026-10-27 20:56:05,480 INFO    findex.crawler.crawl: 200 35357B 0.180s attempts=1 http://127.0.0.1:55652/wiki/razor
+2026-10-27 20:56:05,509 INFO    findex.crawler.crawl: 200 31562B 0.161s attempts=1 http://127.0.0.1:55649/wiki/zeus
+2026-10-27 20:56:05,536 INFO    findex.crawler.crawl: 200 31840B 0.122s attempts=1 http://127.0.0.1:55651/wiki/lina
+2026-10-27 20:56:05,548 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55649/wiki/slardar
+2026-10-27 20:56:05,568 INFO    findex.crawler.crawl: 200 29169B 0.142s attempts=1 http://127.0.0.1:55652/wiki/vengeful_spirit
+2026-10-27 20:56:05,583 INFO    findex.crawler.crawl: 200 36794B 0.123s attempts=1 http://127.0.0.1:55650/wiki/kunkka
+2026-10-27 20:56:05,595 INFO    findex.crawler.crawl: 200 35809B 0.954s attempts=2 http://127.0.0.1:55648/wiki/drow_ranger
+2026-10-27 20:56:05,631 INFO    findex.crawler.crawl: 200 31364B 0.236s attempts=1 http://127.0.0.1:55651/wiki/tiny
+2026-10-27 20:56:05,645 INFO    findex.crawler.crawl: 200 29060B 0.155s attempts=1 http://127.0.0.1:55652/wiki/lion
+2026-10-27 20:56:05,670 INFO    findex.crawler.crawl: 200 29744B 0.125s attempts=1 http://127.0.0.1:55651/wiki/witch_doctor
+2026-10-27 20:56:05,695 INFO    findex.crawler.crawl: 200 31903B 0.176s attempts=1 http://127.0.0.1:55649/wiki/enigma
+2026-10-27 20:56:05,706 INFO    findex.crawler.crawl: 200 33344B 0.131s attempts=1 http://127.0.0.1:55652/wiki/lich
+2026-10-27 20:56:05,738 INFO    findex.crawler.crawl: 200 31566B 0.146s attempts=1 http://127.0.0.1:55650/wiki/tidehunter
+2026-10-27 20:56:05,752 INFO    findex.crawler.crawl: 200 33428B 0.099s attempts=1 http://127.0.0.1:55652/wiki/necrophos
+2026-10-27 20:56:05,774 INFO    findex.crawler.crawl: 200 29725B 0.135s attempts=1 http://127.0.0.1:55651/wiki/sniper
+2026-10-27 20:56:05,799 INFO    findex.crawler.crawl: 200 29076B 0.194s attempts=1 http://127.0.0.1:55648/wiki/riki
+2026-10-27 20:56:05,819 INFO    findex.crawler.crawl: 200 33217B 0.140s attempts=1 http://127.0.0.1:55651/wiki/venomancer
+2026-10-27 20:56:05,840 INFO    findex.crawler.crawl: 200 36193B 0.136s attempts=1 http://127.0.0.1:55649/wiki/beastmaster
+2026-10-27 20:56:05,862 INFO    findex.crawler.crawl: 200 29788B 0.116s attempts=1 http://127.0.0.1:55650/wiki/tinker
+2026-10-27 20:56:05,882 INFO    findex.crawler.crawl: 200 34957B 0.166s attempts=1 http://127.0.0.1:55652/wiki/faceless_void
+2026-10-27 20:56:05,918 INFO    findex.crawler.crawl: 200 36036B 0.091s attempts=1 http://127.0.0.1:55651/wiki/dazzle
+2026-10-27 20:56:05,942 INFO    findex.crawler.crawl: 200 33453B 0.160s attempts=1 http://127.0.0.1:55651/wiki/pugna
+2026-10-27 20:56:05,958 INFO    findex.crawler.crawl: 200 35394B 0.195s attempts=1 http://127.0.0.1:55652/wiki/templar_assassin
+2026-10-27 20:56:05,975 INFO    findex.crawler.crawl: 200 31859B 0.125s attempts=1 http://127.0.0.1:55649/wiki/death_prophet
+2026-10-27 20:56:06,003 INFO    findex.crawler.crawl: 200 29654B 0.197s attempts=1 http://127.0.0.1:55648/wiki/warlock
+2026-10-27 20:56:06,021 INFO    findex.crawler.crawl: 200 28027B 0.151s attempts=1 http://127.0.0.1:55650/wiki/queen_of_pain
+2026-10-27 20:56:06,042 INFO    findex.crawler.crawl: 200 38189B 0.150s attempts=1 http://127.0.0.1:55652/wiki/clockwerk
+2026-10-27 20:56:06,055 INFO    findex.crawler.crawl: 200 30329B 0.128s attempts=1 http://127.0.0.1:55651/wiki/dark_seer
+2026-10-27 20:56:06,087 INFO    findex.crawler.crawl: 200 40206B 0.104s attempts=1 http://127.0.0.1:55649/wiki/luna
+2026-10-27 20:56:06,109 INFO    findex.crawler.crawl: 200 36995B 0.142s attempts=1 http://127.0.0.1:55652/wiki/clinkz
+2026-10-27 20:56:06,133 INFO    findex.crawler.crawl: 200 36198B 0.121s attempts=1 http://127.0.0.1:55648/wiki/wraith_king
+2026-10-27 20:56:06,151 INFO    findex.crawler.crawl: 200 25943B 0.200s attempts=1 http://127.0.0.1:55651/wiki/night_stalker
+2026-10-27 20:56:06,171 INFO    findex.crawler.crawl: 200 31218B 0.141s attempts=1 http://127.0.0.1:55650/wiki/phantom_assassin
+2026-10-27 20:56:06,224 INFO    findex.crawler.crawl: 200 30951B 0.160s attempts=1 http://127.0.0.1:55651/wiki/batrider
+2026-10-27 20:56:06,244 INFO    findex.crawler.crawl: 200 36700B 0.192s attempts=1 http://127.0.0.1:55652/wiki/broodmother
+2026-10-27 20:56:06,264 INFO    findex.crawler.crawl: 200 34037B 0.167s attempts=1 http://127.0.0.1:55649/wiki/nature_s_prophet
+2026-10-27 20:56:06,292 INFO    findex.crawler.crawl: 200 33004B 0.174s attempts=1 http://127.0.0.1:55652/wiki/chen
+2026-10-27 20:56:06,313 INFO    findex.crawler.crawl: 200 37614B 0.170s attempts=1 http://127.0.0.1:55648/wiki/viper
+2026-10-27 20:56:06,350 INFO    findex.crawler.crawl: 200 24894B 0.191s attempts=1 http://127.0.0.1:55651/wiki/ursa
+2026-10-27 20:56:06,363 INFO    findex.crawler.crawl: 200 30536B 0.184s attempts=1 http://127.0.0.1:55650/wiki/dragon_knight
+2026-10-27 20:56:06,393 INFO    findex.crawler.crawl: 200 43808B 0.157s attempts=1 http://127.0.0.1:55651/wiki/silencer
+2026-10-27 20:56:06,418 INFO    findex.crawler.crawl: 200 42522B 0.163s attempts=1 http://127.0.0.1:55652/wiki/spirit_breaker
+2026-10-27 20:56:06,446 INFO    findex.crawler.crawl: 200 32729B 0.172s attempts=1 http://127.0.0.1:55649/wiki/enchantress
+2026-10-27 20:56:06,472 INFO    findex.crawler.crawl: 200 24062B 0.146s attempts=1 http://127.0.0.1:55648/wiki/leshrac
+2026-10-27 20:56:06,485 INFO    findex.crawler.crawl: 200 27450B 0.183s attempts=1 http://127.0.0.1:55652/wiki/outworld_destroyer
+2026-10-27 20:56:06,519 INFO    findex.crawler.crawl: 200 36613B 0.115s attempts=1 http://127.0.0.1:55651/wiki/undying
+2026-10-27 20:56:06,537 INFO    findex.crawler.crawl: 200 37052B 0.165s attempts=1 http://127.0.0.1:55650/wiki/lifestealer
+2026-10-27 20:56:06,555 INFO    findex.crawler.crawl: 200 53480B 0.195s attempts=1 http://127.0.0.1:55651/wiki/lone_druid
+2026-10-27 20:56:06,590 INFO    findex.crawler.crawl: 200 31035B 0.158s attempts=1 http://127.0.0.1:55652/wiki/chaos_knight
+2026-10-27 20:56:06,612 INFO    findex.crawler.crawl: 200 27594B 0.156s attempts=1 http://127.0.0.1:55649/wiki/weaver
+2026-10-27 20:56:06,627 WARNING findex.crawler.fetch: retry 2/3 in 0.51s (HTTP 503, backoff): http://127.0.0.1:55648/wiki/omniknight
+2026-10-27 20:56:06,641 INFO    findex.crawler.crawl: 200 40634B 0.148s attempts=1 http://127.0.0.1:55652/wiki/rubick
+2026-10-27 20:56:06,662 INFO    findex.crawler.crawl: 200 22141B 1.338s attempts=2 http://127.0.0.1:55650/wiki/sven
+2026-10-27 20:56:06,686 INFO    findex.crawler.crawl: 200 27634B 0.140s attempts=1 http://127.0.0.1:55650/wiki/huskar
+2026-10-27 20:56:06,705 INFO    findex.crawler.crawl: 200 36421B 0.176s attempts=1 http://127.0.0.1:55651/wiki/keeper_of_the_light
+2026-10-27 20:56:06,727 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55649/wiki/ancient_apparition
+2026-10-27 20:56:06,749 INFO    findex.crawler.crawl: 200 36055B 0.180s attempts=1 http://127.0.0.1:55651/wiki/troll_warlord
+2026-10-27 20:56:06,815 INFO    findex.crawler.crawl: 200 28797B 1.457s attempts=2 http://127.0.0.1:55649/wiki/slardar
+2026-10-27 20:56:06,836 INFO    findex.crawler.crawl: 200 33862B 0.239s attempts=1 http://127.0.0.1:55652/wiki/io
+2026-10-27 20:56:06,847 INFO    findex.crawler.crawl: 200 35342B 0.153s attempts=1 http://127.0.0.1:55650/wiki/doom
+2026-10-27 20:56:06,874 INFO    findex.crawler.crawl: 200 36625B 0.206s attempts=1 http://127.0.0.1:55650/wiki/jakiro
+2026-10-27 20:56:06,897 INFO    findex.crawler.crawl: 200 31282B 0.248s attempts=1 http://127.0.0.1:55652/wiki/centaur_warrunner
+2026-10-27 20:56:06,913 INFO    findex.crawler.crawl: 200 37766B 0.197s attempts=1 http://127.0.0.1:55651/wiki/tusk
+2026-10-27 20:56:06,942 INFO    findex.crawler.crawl: 200 38669B 0.183s attempts=1 http://127.0.0.1:55651/wiki/techies
+2026-10-27 20:56:06,963 INFO    findex.crawler.crawl: 200 41445B 0.138s attempts=1 http://127.0.0.1:55649/wiki/alchemist
+2026-10-27 20:56:06,998 INFO    findex.crawler.crawl: 200 31781B 0.153s attempts=1 http://127.0.0.1:55652/wiki/skywrath_mage
+2026-10-27 20:56:07,035 INFO    findex.crawler.crawl: 200 36973B 0.113s attempts=1 http://127.0.0.1:55651/wiki/phoenix
+2026-10-27 20:56:07,047 INFO    findex.crawler.crawl: 200 32990B 0.141s attempts=1 http://127.0.0.1:55652/wiki/ember_spirit
+2026-10-27 20:56:07,066 INFO    findex.crawler.crawl: 200 69588B 0.210s attempts=1 http://127.0.0.1:55650/wiki/invoker
+2026-10-27 20:56:07,112 INFO    findex.crawler.crawl: 200 40777B 0.140s attempts=1 http://127.0.0.1:55649/wiki/brewmaster
+2026-10-27 20:56:07,127 INFO    findex.crawler.crawl: 200 38235B 0.244s attempts=1 http://127.0.0.1:55650/wiki/shadow_demon
+2026-10-27 20:56:07,165 INFO    findex.crawler.crawl: 200 44509B 0.154s attempts=1 http://127.0.0.1:55652/wiki/oracle
+2026-10-27 20:56:07,177 INFO    findex.crawler.crawl: 200 27283B 0.225s attempts=1 http://127.0.0.1:55651/wiki/dark_willow
+2026-10-27 20:56:07,215 INFO    findex.crawler.crawl: 200 37378B 0.159s attempts=1 http://127.0.0.1:55652/wiki/pangolier
+2026-10-27 20:56:07,226 INFO    findex.crawler.crawl: 200 33496B 0.182s attempts=1 http://127.0.0.1:55651/wiki/snapfire
+2026-10-27 20:56:07,243 INFO    findex.crawler.crawl: 200 32030B 0.151s attempts=1 http://127.0.0.1:55650/wiki/ogre_magi
+2026-10-27 20:56:07,274 INFO    findex.crawler.crawl: 200 28136B 0.137s attempts=1 http://127.0.0.1:55650/wiki/naga_siren
+2026-10-27 20:56:07,294 WARNING findex.crawler.fetch: retry 2/3 in 0.81s (timeout after 2s, backoff): http://127.0.0.1:55648/wiki/shadow_shaman
+2026-10-27 20:56:07,300 INFO    findex.crawler.crawl: 200 32795B 0.820s attempts=2 http://127.0.0.1:55648/wiki/omniknight
+2026-10-27 20:56:07,315 INFO    findex.crawler.crawl: 200 40520B 0.141s attempts=1 http://127.0.0.1:55652/wiki/mars
+2026-10-27 20:56:07,344 INFO    findex.crawler.crawl: 200 32370B 0.220s attempts=1 http://127.0.0.1:55649/wiki/treant_protector
+2026-10-27 20:56:07,359 INFO    findex.crawler.crawl: 200 35756B 0.136s attempts=1 http://127.0.0.1:55652/wiki/drow_ranger~1
+2026-10-27 20:56:07,389 INFO    findex.crawler.crawl: 200 34400B 0.205s attempts=1 http://127.0.0.1:55651/wiki/muerta
+2026-10-27 20:56:07,406 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55651/wiki/crystal_maiden~1
+2026-10-27 20:56:07,409 INFO    findex.crawler.crawl: 200 35932B 0.124s attempts=1 http://127.0.0.1:55650/wiki/bristleback
+2026-10-27 20:56:07,438 INFO    findex.crawler.crawl: 200 31361B 0.132s attempts=1 http://127.0.0.1:55648/wiki/bounty_hunter
+2026-10-27 20:56:07,449 INFO    findex.crawler.crawl: 200 34424B 0.196s attempts=1 http://127.0.0.1:55650/wiki/medusa
+2026-10-27 20:56:07,478 INFO    findex.crawler.crawl: 200 34372B 0.151s attempts=1 http://127.0.0.1:55652/wiki/sand_king~1
+2026-10-27 20:56:07,501 INFO    findex.crawler.crawl: 200 35314B 0.147s attempts=1 http://127.0.0.1:55649/wiki/nyx_assassin
+2026-10-27 20:56:07,516 INFO    findex.crawler.crawl: 200 35080B 0.118s attempts=1 http://127.0.0.1:55651/wiki/morphling~1
+2026-10-27 20:56:07,542 INFO    findex.crawler.crawl: 200 27012B 0.174s attempts=1 http://127.0.0.1:55652/wiki/windranger~1
+2026-10-27 20:56:07,563 INFO    findex.crawler.crawl: 200 40369B 0.146s attempts=1 http://127.0.0.1:55650/wiki/legion_commander
+2026-10-27 20:56:07,590 INFO    findex.crawler.crawl: 200 32139B 0.080s attempts=1 http://127.0.0.1:55649/wiki/slark
+2026-10-27 20:56:07,617 INFO    findex.crawler.crawl: 200 35315B 0.091s attempts=1 http://127.0.0.1:55651/wiki/razor~1
+2026-10-27 20:56:07,632 INFO    findex.crawler.crawl: 200 29024B 0.082s attempts=1 http://127.0.0.1:55652/wiki/riki~1
+2026-10-27 20:56:07,642 INFO    findex.crawler.crawl: 200 30828B 0.196s attempts=1 http://127.0.0.1:55648/wiki/spectre
+2026-10-27 20:56:07,672 INFO    findex.crawler.crawl: 200 28142B 0.213s attempts=1 http://127.0.0.1:55650/wiki/void_spirit
+2026-10-27 20:56:07,706 INFO    findex.crawler.crawl: 200 35059B 0.133s attempts=1 http://127.0.0.1:55650/wiki/primal_beast
+2026-10-27 20:56:07,732 INFO    findex.crawler.crawl: 200 29177B 0.106s attempts=1 http://127.0.0.1:55651/wiki/vengeful_spirit~1
+2026-10-27 20:56:07,757 INFO    findex.crawler.crawl: 200 40794B 0.157s attempts=1 http://127.0.0.1:55649/wiki/timbersaw
+2026-10-27 20:56:07,780 INFO    findex.crawler.crawl: 200 35092B 0.100s attempts=1 http://127.0.0.1:55650/wiki/bloodseeker~1
+2026-10-27 20:56:07,801 INFO    findex.crawler.crawl: 200 29678B 0.161s attempts=1 http://127.0.0.1:55652/wiki/warlock~1
+2026-10-27 20:56:07,826 INFO    findex.crawler.crawl: 200 27721B 0.175s attempts=1 http://127.0.0.1:55648/wiki/gyrocopter
+2026-10-27 20:56:07,842 INFO    findex.crawler.crawl: 200 31964B 1.223s attempts=2 http://127.0.0.1:55649/wiki/ancient_apparition
+2026-10-27 20:56:07,855 INFO    findex.crawler.crawl: 200 33715B 0.141s attempts=1 http://127.0.0.1:55650/wiki/mirana~1
+2026-10-27 20:56:07,882 INFO    findex.crawler.crawl: 200 29087B 0.144s attempts=1 http://127.0.0.1:55651/wiki/lion~1
+2026-10-27 20:56:07,901 INFO    findex.crawler.crawl: 200 37224B 0.112s attempts=1 http://127.0.0.1:55650/wiki/pudge~1
+2026-10-27 20:56:07,927 INFO    findex.crawler.crawl: 200 36141B 0.116s attempts=1 http://127.0.0.1:55652/wiki/wraith_king~1
+2026-10-27 20:56:07,956 INFO    findex.crawler.crawl: 200 39217B 0.188s attempts=1 http://127.0.0.1:55649/wiki/elder_titan
+2026-10-27 20:56:07,973 INFO    findex.crawler.crawl: 200 30898B 0.124s attempts=1 http://127.0.0.1:55649/wiki/underlord
+2026-10-27 20:56:08,003 INFO    findex.crawler.crawl: 200 33375B 0.111s attempts=1 http://127.0.0.1:55651/wiki/lich~1
+2026-10-27 20:56:08,026 INFO    findex.crawler.crawl: 200 31308B 0.162s attempts=1 http://127.0.0.1:55650/wiki/tiny~1
+2026-10-27 20:56:08,065 INFO    findex.crawler.crawl: 200 37565B 0.129s attempts=1 http://127.0.0.1:55652/wiki/viper~1
+2026-10-27 20:56:08,092 INFO    findex.crawler.crawl: 200 31798B 0.175s attempts=1 http://127.0.0.1:55650/wiki/lina~1
+2026-10-27 20:56:08,122 INFO    findex.crawler.crawl: 200 29767B 0.088s attempts=1 http://127.0.0.1:55650/wiki/witch_doctor~1
+2026-10-27 20:56:08,153 INFO    findex.crawler.crawl: 200 40152B 0.186s attempts=1 http://127.0.0.1:55649/wiki/arc_warden
+2026-10-27 20:56:08,172 INFO    findex.crawler.crawl: 200 33440B 0.159s attempts=1 http://127.0.0.1:55651/wiki/necrophos~1
+2026-10-27 20:56:08,183 INFO    findex.crawler.crawl: 200 45558B 0.201s attempts=1 http://127.0.0.1:55649/wiki/hoodwink
+2026-10-27 20:56:08,219 INFO    findex.crawler.crawl: 200 29675B 0.117s attempts=1 http://127.0.0.1:55650/wiki/sniper~1
+2026-10-27 20:56:08,229 INFO    findex.crawler.crawl: 200 23934B 0.150s attempts=1 http://127.0.0.1:55652/wiki/leshrac~1
+2026-10-27 20:56:08,257 INFO    findex.crawler.crawl: 200 30636B 3.004s attempts=2 http://127.0.0.1:55648/wiki/shadow_shaman
+2026-10-27 20:56:08,284 INFO    findex.crawler.crawl: 200 33159B 0.152s attempts=1 http://127.0.0.1:55650/wiki/venomancer~1
+2026-10-27 20:56:08,308 INFO    findex.crawler.crawl: 200 32810B 0.072s attempts=1 http://127.0.0.1:55652/wiki/omniknight~1
+2026-10-27 20:56:08,331 INFO    findex.crawler.crawl: 200 30754B 0.169s attempts=1 http://127.0.0.1:55649/wiki/marci
+2026-10-27 20:56:08,346 INFO    findex.crawler.crawl: 200 33234B 0.152s attempts=1 http://127.0.0.1:55649/wiki/bane~1
+2026-10-27 20:56:08,371 INFO    findex.crawler.crawl: 200 34819B 0.191s attempts=1 http://127.0.0.1:55651/wiki/faceless_void~1
+2026-10-27 20:56:08,395 INFO    findex.crawler.crawl: 200 33339B 0.169s attempts=1 http://127.0.0.1:55650/wiki/pugna~1
+2026-10-27 20:56:08,418 INFO    findex.crawler.crawl: 200 35986B 0.125s attempts=1 http://127.0.0.1:55650/wiki/dazzle~1
+2026-10-27 20:56:08,438 INFO    findex.crawler.crawl: 200 31237B 0.122s attempts=1 http://127.0.0.1:55652/wiki/bounty_hunter~1
+2026-10-27 20:56:08,457 INFO    findex.crawler.crawl: 200 38776B 0.190s attempts=1 http://127.0.0.1:55648/wiki/meepo
+2026-10-27 20:56:08,478 INFO    findex.crawler.crawl: 200 29067B 0.137s attempts=1 http://127.0.0.1:55649/wiki/juggernaut~1
+2026-10-27 20:56:08,541 INFO    findex.crawler.crawl: 200 30278B 0.137s attempts=1 http://127.0.0.1:55650/wiki/dark_seer~1
+2026-10-27 20:56:08,566 INFO    findex.crawler.crawl: 200 23307B 0.211s attempts=1 http://127.0.0.1:55649/wiki/puck~1
+2026-10-27 20:56:08,584 WARNING findex.crawler.fetch: retry 2/3 in 0.75s (HTTP 503, backoff): http://127.0.0.1:55651/wiki/templar_assassin~1
+2026-10-27 20:56:08,594 INFO    findex.crawler.crawl: 200 30775B 0.147s attempts=1 http://127.0.0.1:55652/wiki/spectre~1
+2026-10-27 20:56:08,612 INFO    findex.crawler.crawl: 200 25888B 0.185s attempts=1 http://127.0.0.1:55650/wiki/night_stalker~1
+2026-10-27 20:56:08,634 INFO    findex.crawler.crawl: 200 30844B 1.399s attempts=2 http://127.0.0.1:55651/wiki/crystal_maiden~1
+2026-10-27 20:56:08,644 INFO    findex.crawler.crawl: 200 29209B 0.178s attempts=1 http://127.0.0.1:55648/wiki/disruptor
+2026-10-27 20:56:08,675 WARNING findex.crawler.fetch: retry 2/3 in 0.62s (HTTP 503, backoff): http://127.0.0.1:55649/wiki/sven~1
+2026-10-27 20:56:08,689 INFO    findex.crawler.crawl: 200 36760B 0.116s attempts=1 http://127.0.0.1:55649/wiki/kunkka~1
+2026-10-27 20:56:08,733 INFO    findex.crawler.crawl: 200 27667B 0.130s attempts=1 http://127.0.0.1:55652/wiki/gyrocopter~1
+2026-10-27 20:56:08,751 INFO    findex.crawler.crawl: 200 30818B 0.197s attempts=1 http://127.0.0.1:55650/wiki/batrider~1
+2026-10-27 20:56:08,776 INFO    findex.crawler.crawl: 200 37162B 0.123s attempts=1 http://127.0.0.1:55648/wiki/visage
+2026-10-27 20:56:08,798 INFO    findex.crawler.crawl: 200 38220B 0.157s attempts=1 http://127.0.0.1:55651/wiki/clockwerk~1
+2026-10-27 20:56:08,822 INFO    findex.crawler.crawl: 200 24779B 0.202s attempts=1 http://127.0.0.1:55650/wiki/ursa~1
+2026-10-27 20:56:08,844 INFO    findex.crawler.crawl: 200 31509B 0.146s attempts=1 http://127.0.0.1:55649/wiki/tidehunter~1
+2026-10-27 20:56:08,916 INFO    findex.crawler.crawl: 200 43764B 0.155s attempts=1 http://127.0.0.1:55650/wiki/silencer~1
+2026-10-27 20:56:08,937 INFO    findex.crawler.crawl: 200 36873B 0.129s attempts=1 http://127.0.0.1:55651/wiki/clinkz~1
+2026-10-27 20:56:08,961 INFO    findex.crawler.crawl: 200 27106B 0.175s attempts=1 http://127.0.0.1:55648/wiki/magnus
+2026-10-27 20:56:08,977 INFO    findex.crawler.crawl: 200 53430B 0.147s attempts=1 http://127.0.0.1:55650/wiki/lone_druid~1
+2026-10-27 20:56:09,006 INFO    findex.crawler.crawl: 200 29810B 0.154s attempts=1 http://127.0.0.1:55649/wiki/tinker~1
+2026-10-27 20:56:09,031 INFO    findex.crawler.crawl: 200 36500B 0.106s attempts=1 http://127.0.0.1:55650/wiki/undying~1
+2026-10-27 20:56:09,048 INFO    findex.crawler.crawl: 200 36578B 0.100s attempts=1 http://127.0.0.1:55651/wiki/broodmother~1
+2026-10-27 20:56:09,088 INFO    findex.crawler.crawl: 200 40954B 0.119s attempts=1 http://127.0.0.1:55648/wiki/abaddon
+2026-10-27 20:56:09,138 INFO    findex.crawler.crawl: 200 36081B 0.097s attempts=1 http://127.0.0.1:55650/wiki/troll_warlord~1
+2026-10-27 20:56:09,161 INFO    findex.crawler.crawl: 200 36280B 0.171s attempts=1 http://127.0.0.1:55650/wiki/keeper_of_the_light~1
+2026-10-27 20:56:09,186 INFO    findex.crawler.crawl: 200 27984B 0.172s attempts=1 http://127.0.0.1:55649/wiki/queen_of_pain~1
+2026-10-27 20:56:09,197 INFO    findex.crawler.crawl: 200 40967B 0.097s attempts=1 http://127.0.0.1:55648/wiki/earth_spirit
+2026-10-27 20:56:09,223 INFO    findex.crawler.crawl: 200 32880B 0.165s attempts=1 http://127.0.0.1:55651/wiki/chen~1
+2026-10-27 20:56:09,246 INFO    findex.crawler.crawl: 200 38683B 0.075s attempts=1 http://127.0.0.1:55650/wiki/techies~1
+2026-10-27 20:56:09,311 INFO    findex.crawler.crawl: 200 37722B 0.162s attempts=1 http://127.0.0.1:55650/wiki/tusk~1
+2026-10-27 20:56:09,337 INFO    findex.crawler.crawl: 200 36932B 0.083s attempts=1 http://127.0.0.1:55650/wiki/phoenix~1
+2026-10-27 20:56:09,358 INFO    findex.crawler.crawl: 200 33955B 0.152s attempts=1 http://127.0.0.1:55648/wiki/winter_wyvern
+2026-10-27 20:56:09,382 INFO    findex.crawler.crawl: 200 31223B 0.187s attempts=1 http://127.0.0.1:55649/wiki/phantom_assassin~1
+2026-10-27 20:56:09,406 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55651/wiki/spirit_breaker~1
+2026-10-27 20:56:09,422 WARNING findex.crawler.fetch: retry 2/3 in 1.00s (HTTP 429, Retry-After 1s): http://127.0.0.1:55650/wiki/dark_willow~1
+2026-10-27 20:56:09,437 INFO    findex.crawler.crawl: 200 33444B 0.089s attempts=1 http://127.0.0.1:55650/wiki/snapfire~1
+2026-10-27 20:56:09,469 INFO    findex.crawler.crawl: 200 30483B 0.079s attempts=1 http://127.0.0.1:55649/wiki/dragon_knight~1
+2026-10-27 20:56:09,490 INFO    findex.crawler.crawl: 200 22018B 1.004s attempts=2 http://127.0.0.1:55649/wiki/sven~1
+2026-10-27 20:56:09,511 WARNING findex.crawler.fetch: retry 2/3 in 0.56s (timeout after 2s, backoff): http://127.0.0.1:55652/wiki/shadow_shaman~1
+2026-10-27 20:56:09,514 INFO    findex.crawler.crawl: 200 36831B 0.147s attempts=1 http://127.0.0.1:55648/wiki/grimstroke
+2026-10-27 20:56:09,540 INFO    findex.crawler.crawl: 200 35338B 1.159s attempts=2 http://127.0.0.1:55651/wiki/templar_assassin~1
+2026-10-27 20:56:09,555 INFO    findex.crawler.crawl: 200 34352B 0.109s attempts=1 http://127.0.0.1:55650/wiki/muerta~1
+2026-10-27 20:56:09,565 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/terrorblade
+2026-10-27 20:56:09,565 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/monkey_king
+2026-10-27 20:56:09,600 INFO    findex.crawler.crawl: 200 37001B 0.122s attempts=1 http://127.0.0.1:55649/wiki/lifestealer~1
+2026-10-27 20:56:09,622 INFO    findex.crawler.crawl: 200 43169B 0.099s attempts=1 http://127.0.0.1:55648/wiki/dawnbreaker
+2026-10-27 20:56:09,650 INFO    findex.crawler.crawl: 200 13B 0.085s attempts=1 http://127.0.0.1:55650/files/monkey_king.pdf
+2026-10-27 20:56:09,651 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/bane
+2026-10-27 20:56:09,651 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/juggernaut
+2026-10-27 20:56:09,651 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/puck
+2026-10-27 20:56:09,651 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/kunkka
+2026-10-27 20:56:09,651 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/tidehunter
+2026-10-27 20:56:09,657 INFO    findex.crawler.crawl: 200 27586B 0.160s attempts=1 http://127.0.0.1:55649/wiki/huskar~1
+2026-10-27 20:56:09,698 INFO    findex.crawler.crawl: 200 27384B 0.148s attempts=1 http://127.0.0.1:55651/wiki/outworld_destroyer~1
+2026-10-27 20:56:09,716 INFO    findex.crawler.crawl: 200 42264B 0.079s attempts=1 http://127.0.0.1:55648/wiki/axe~1
+2026-10-27 20:56:09,768 INFO    findex.crawler.crawl: 200 36497B 0.158s attempts=1 http://127.0.0.1:55649/wiki/jakiro~1
+2026-10-27 20:56:09,788 INFO    findex.crawler.crawl: 200 35292B 0.123s attempts=1 http://127.0.0.1:55649/wiki/doom~1
+2026-10-27 20:56:09,813 INFO    findex.crawler.crawl: 200 13B 0.162s attempts=1 http://127.0.0.1:55650/files/tidehunter.pdf
+2026-10-27 20:56:09,813 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/tinker
+2026-10-27 20:56:09,813 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/queen_of_pain
+2026-10-27 20:56:09,815 INFO    findex.crawler.crawl: 200 27377B 0.089s attempts=1 http://127.0.0.1:55648/wiki/earthshaker~1
+2026-10-27 20:56:09,841 INFO    findex.crawler.crawl: 200 30983B 0.137s attempts=1 http://127.0.0.1:55651/wiki/chaos_knight~1
+2026-10-27 20:56:09,862 WARNING findex.crawler.fetch: retry 2/3 in 0.58s (timeout after 2s, backoff): http://127.0.0.1:55648/wiki/lycan
+2026-10-27 20:56:09,873 INFO    findex.crawler.crawl: 200 69608B 0.096s attempts=1 http://127.0.0.1:55649/wiki/invoker~1
+2026-10-27 20:56:09,913 INFO    findex.crawler.crawl: 200 38250B 0.115s attempts=1 http://127.0.0.1:55649/wiki/shadow_demon~1
+2026-10-27 20:56:09,959 INFO    findex.crawler.crawl: 200 29483B 0.135s attempts=1 http://127.0.0.1:55648/wiki/phantom_lancer~1
+2026-10-27 20:56:09,978 INFO    findex.crawler.crawl: 200 40519B 0.129s attempts=1 http://127.0.0.1:55651/wiki/rubick~1
+2026-10-27 20:56:10,000 INFO    findex.crawler.crawl: 200 32055B 0.101s attempts=1 http://127.0.0.1:55649/wiki/ogre_magi~1
+2026-10-27 20:56:10,029 INFO    findex.crawler.crawl: 200 28068B 0.106s attempts=1 http://127.0.0.1:55649/wiki/naga_siren~1
+2026-10-27 20:56:10,123 INFO    findex.crawler.crawl: 200 34376B 0.113s attempts=1 http://127.0.0.1:55649/wiki/medusa~1
+2026-10-27 20:56:10,151 INFO    findex.crawler.crawl: 200 29254B 0.185s attempts=1 http://127.0.0.1:55648/wiki/storm_spirit~1
+2026-10-27 20:56:10,166 INFO    findex.crawler.crawl: 200 33818B 0.177s attempts=1 http://127.0.0.1:55651/wiki/io~1
+2026-10-27 20:56:10,199 INFO    findex.crawler.crawl: 200 35874B 0.159s attempts=1 http://127.0.0.1:55649/wiki/bristleback~1
+2026-10-27 20:56:10,224 INFO    findex.crawler.crawl: 200 40249B 0.090s attempts=1 http://127.0.0.1:55649/wiki/legion_commander~1
+2026-10-27 20:56:10,246 INFO    findex.crawler.crawl: 200 31514B 0.086s attempts=1 http://127.0.0.1:55648/wiki/zeus~1
+2026-10-27 20:56:10,284 INFO    findex.crawler.crawl: 200 30575B 2.798s attempts=2 http://127.0.0.1:55652/wiki/shadow_shaman~1
+2026-10-27 20:56:10,306 INFO    findex.crawler.crawl: 200 31219B 0.131s attempts=1 http://127.0.0.1:55651/wiki/centaur_warrunner~1
+2026-10-27 20:56:10,337 INFO    findex.crawler.crawl: 200 28343B 0.128s attempts=1 http://127.0.0.1:55649/wiki/terrorblade~1
+2026-10-27 20:56:10,379 INFO    findex.crawler.crawl: 200 28744B 0.125s attempts=1 http://127.0.0.1:55648/wiki/slardar~1
+2026-10-27 20:56:10,403 INFO    findex.crawler.crawl: 200 55499B 0.170s attempts=1 http://127.0.0.1:55649/wiki/monkey_king~1
+2026-10-27 20:56:10,434 WARNING findex.crawler.fetch: retry 2/3 in 0.51s (HTTP 503, backoff): http://127.0.0.1:55652/wiki/meepo~1
+2026-10-27 20:56:10,477 INFO    findex.crawler.crawl: 200 31743B 0.163s attempts=1 http://127.0.0.1:55651/wiki/skywrath_mage~1
+2026-10-27 20:56:10,487 INFO    findex.crawler.crawl: 200 28167B 0.142s attempts=1 http://127.0.0.1:55649/wiki/void_spirit~1
+2026-10-27 20:56:10,495 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/axe
+2026-10-27 20:56:10,498 INFO    findex.crawler.crawl: 200 31783B 0.112s attempts=1 http://127.0.0.1:55648/wiki/enigma~1
+2026-10-27 20:56:10,533 WARNING findex.crawler.crawl: FAIL redirect loop (too many redirects) after 1 attempt(s), 0.720s: http://127.0.0.1:55650/loop/a
+2026-10-27 20:56:10,534 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/phantom_assassin
+2026-10-27 20:56:10,534 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/dragon_knight
+2026-10-27 20:56:10,534 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/lifestealer
+2026-10-27 20:56:10,545 INFO    findex.crawler.crawl: 200 27157B 1.224s attempts=2 http://127.0.0.1:55650/wiki/dark_willow~1
+2026-10-27 20:56:10,553 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/sven
+2026-10-27 20:56:10,566 INFO    findex.crawler.crawl: 200 35085B 0.151s attempts=1 http://127.0.0.1:55649/wiki/primal_beast~1
+2026-10-27 20:56:10,575 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/phantom_lancer
+2026-10-27 20:56:10,575 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/earthshaker
+2026-10-27 20:56:10,591 INFO    findex.crawler.crawl: 200 42464B 1.359s attempts=2 http://127.0.0.1:55651/wiki/spirit_breaker~1
+2026-10-27 20:56:10,613 INFO    findex.crawler.crawl: 200 36136B 0.107s attempts=1 http://127.0.0.1:55648/wiki/beastmaster~1
+2026-10-27 20:56:10,641 INFO    findex.crawler.crawl: 200 32938B 0.156s attempts=1 http://127.0.0.1:55651/wiki/ember_spirit~1
+2026-10-27 20:56:10,667 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.132s: http://127.0.0.1:55650/missing/lifestealer
+2026-10-27 20:56:10,668 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/huskar
+2026-10-27 20:56:10,668 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/doom
+2026-10-27 20:56:10,668 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/jakiro
+2026-10-27 20:56:10,676 INFO    findex.crawler.crawl: 200 33715B 2.841s attempts=2 http://127.0.0.1:55648/wiki/lycan
+2026-10-27 20:56:10,694 INFO    findex.crawler.crawl: 200 13B 0.141s attempts=1 http://127.0.0.1:55650/files/sven.pdf
+2026-10-27 20:56:10,694 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/invoker
+2026-10-27 20:56:10,694 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/shadow_demon
+2026-10-27 20:56:10,694 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/ogre_magi
+2026-10-27 20:56:10,694 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/naga_siren
+2026-10-27 20:56:10,697 INFO    findex.crawler.crawl: 200 13B 0.201s attempts=1 http://127.0.0.1:55649/files/axe.pdf
+2026-10-27 20:56:10,697 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/storm_spirit
+2026-10-27 20:56:10,697 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/zeus
+2026-10-27 20:56:10,697 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/enigma
+2026-10-27 20:56:10,728 INFO    findex.crawler.crawl: 200 31804B 0.104s attempts=1 http://127.0.0.1:55648/wiki/death_prophet~1
+2026-10-27 20:56:10,787 INFO    findex.crawler.crawl: 200 44471B 0.182s attempts=1 http://127.0.0.1:55651/wiki/oracle~1
+2026-10-27 20:56:10,802 INFO    findex.crawler.crawl: 200 37254B 0.153s attempts=1 http://127.0.0.1:55651/wiki/pangolier~1
+2026-10-27 20:56:10,811 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/bloodseeker
+2026-10-27 20:56:10,811 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/mirana
+2026-10-27 20:56:10,811 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/pudge
+2026-10-27 20:56:10,811 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/lina
+2026-10-27 20:56:10,814 WARNING findex.crawler.fetch: retry 2/3 in 0.92s (timeout after 2s, backoff): http://127.0.0.1:55652/wiki/lycan~1
+2026-10-27 20:56:10,832 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.135s: http://127.0.0.1:55649/missing/enigma
+2026-10-27 20:56:10,833 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/beastmaster
+2026-10-27 20:56:10,836 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.168s: http://127.0.0.1:55650/missing/jakiro
+2026-10-27 20:56:10,837 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/bristleback
+2026-10-27 20:56:10,839 INFO    findex.crawler.crawl: 200 13B 0.144s attempts=1 http://127.0.0.1:55650/files/naga_siren.pdf
+2026-10-27 20:56:10,839 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/medusa
+2026-10-27 20:56:10,839 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/legion_commander
+2026-10-27 20:56:10,860 INFO    findex.crawler.crawl: 200 34064B 0.125s attempts=1 http://127.0.0.1:55648/wiki/nature_s_prophet~1
+2026-10-27 20:56:10,895 INFO    findex.crawler.crawl: 200 40085B 0.210s attempts=1 http://127.0.0.1:55648/wiki/luna~1
+2026-10-27 20:56:10,921 INFO    findex.crawler.crawl: 200 40405B 0.122s attempts=1 http://127.0.0.1:55651/wiki/mars~1
+2026-10-27 20:56:10,931 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/tiny
+2026-10-27 20:56:10,945 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.112s: http://127.0.0.1:55649/missing/beastmaster
+2026-10-27 20:56:10,946 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/death_prophet
+2026-10-27 20:56:10,946 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/luna
+2026-10-27 20:56:10,954 INFO    findex.crawler.crawl: 200 13B 0.118s attempts=1 http://127.0.0.1:55650/files/bristleback.pdf
+2026-10-27 20:56:10,955 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/void_spirit
+2026-10-27 20:56:10,955 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/primal_beast
+2026-10-27 20:56:10,955 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/bloodseeker
+2026-10-27 20:56:10,955 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/mirana
+2026-10-27 20:56:10,996 INFO    findex.crawler.crawl: 200 32674B 0.127s attempts=1 http://127.0.0.1:55648/wiki/enchantress~1
+2026-10-27 20:56:11,044 INFO    findex.crawler.crawl: 200 27532B 0.139s attempts=1 http://127.0.0.1:55648/wiki/weaver~1
+2026-10-27 20:56:11,059 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.219s: http://127.0.0.1:55650/missing/legion_commander
+2026-10-27 20:56:11,060 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/pudge
+2026-10-27 20:56:11,060 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/tiny
+2026-10-27 20:56:11,060 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/lina
+2026-10-27 20:56:11,060 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/witch_doctor
+2026-10-27 20:56:11,068 INFO    findex.crawler.crawl: 200 13B 0.121s attempts=1 http://127.0.0.1:55649/files/luna.pdf
+2026-10-27 20:56:11,068 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/nature_s_prophet
+2026-10-27 20:56:11,068 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/enchantress
+2026-10-27 20:56:11,068 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/weaver
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: 200 13B 0.152s attempts=1 http://127.0.0.1:55651/files/tiny.pdf
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/witch_doctor
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/sniper
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/venomancer
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/dazzle
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/pugna
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/dark_seer
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/night_stalker
+2026-10-27 20:56:11,084 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/batrider
+2026-10-27 20:56:11,104 INFO    findex.crawler.crawl: 200 38662B 0.811s attempts=2 http://127.0.0.1:55652/wiki/meepo~1
+2026-10-27 20:56:11,138 INFO    findex.crawler.crawl: 200 13B 0.184s attempts=1 http://127.0.0.1:55650/files/mirana.pdf
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/sniper
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/venomancer
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/pugna
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/dazzle
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/dark_seer
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/night_stalker
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/batrider
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/ursa
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/silencer
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/lone_druid
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/undying
+2026-10-27 20:56:11,139 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/troll_warlord
+2026-10-27 20:56:11,151 INFO    findex.crawler.crawl: 200 13B 0.083s attempts=1 http://127.0.0.1:55649/files/weaver.pdf
+2026-10-27 20:56:11,151 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/slardar
+2026-10-27 20:56:11,151 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/alchemist
+2026-10-27 20:56:11,162 INFO    findex.crawler.crawl: 200 31969B 0.158s attempts=1 http://127.0.0.1:55648/wiki/ancient_apparition~1
+2026-10-27 20:56:11,187 INFO    findex.crawler.crawl: 200 41393B 0.135s attempts=1 http://127.0.0.1:55648/wiki/alchemist~1
+2026-10-27 20:56:11,202 INFO    findex.crawler.crawl: 200 13B 0.142s attempts=1 http://127.0.0.1:55650/files/witch_doctor.pdf
+2026-10-27 20:56:11,202 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/keeper_of_the_light
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/techies
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/tusk
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/phoenix
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/snapfire
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/muerta
+2026-10-27 20:56:11,203 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55650/private/dark_willow
+2026-10-27 20:56:11,214 INFO    findex.crawler.crawl: 200 29235B 0.101s attempts=1 http://127.0.0.1:55652/wiki/disruptor~1
+2026-10-27 20:56:11,246 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.106s: http://127.0.0.1:55650/missing/troll_warlord
+2026-10-27 20:56:11,248 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.096s: http://127.0.0.1:55649/missing/alchemist
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/brewmaster
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/treant_protector
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/nyx_assassin
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/slark
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/timbersaw
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/ancient_apparition
+2026-10-27 20:56:11,249 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/elder_titan
+2026-10-27 20:56:11,257 INFO    findex.crawler.crawl: 200 13B 0.173s attempts=1 http://127.0.0.1:55651/files/batrider.pdf
+2026-10-27 20:56:11,258 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/ursa
+2026-10-27 20:56:11,258 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/silencer
+2026-10-27 20:56:11,258 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/undying
+2026-10-27 20:56:11,297 INFO    findex.crawler.crawl: 200 40729B 0.128s attempts=1 http://127.0.0.1:55648/wiki/brewmaster~1
+2026-10-27 20:56:11,336 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.087s: http://127.0.0.1:55649/missing/elder_titan
+2026-10-27 20:56:11,337 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/underlord
+2026-10-27 20:56:11,337 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/arc_warden
+2026-10-27 20:56:11,337 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/hoodwink
+2026-10-27 20:56:11,351 WARNING findex.crawler.crawl: FAIL redirect loop (too many redirects) after 1 attempt(s), 0.776s: http://127.0.0.1:55649/loop/a
+2026-10-27 20:56:11,352 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/marci
+2026-10-27 20:56:11,367 INFO    findex.crawler.crawl: 200 32312B 0.171s attempts=1 http://127.0.0.1:55648/wiki/treant_protector~1
+2026-10-27 20:56:11,380 INFO    findex.crawler.crawl: 200 37045B 0.158s attempts=1 http://127.0.0.1:55652/wiki/visage~1
+2026-10-27 20:56:11,408 INFO    findex.crawler.crawl: 200 13B 0.150s attempts=1 http://127.0.0.1:55651/files/undying.pdf
+2026-10-27 20:56:11,409 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/lone_druid
+2026-10-27 20:56:11,409 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/keeper_of_the_light
+2026-10-27 20:56:11,454 INFO    findex.crawler.crawl: 200 35193B 0.144s attempts=1 http://127.0.0.1:55648/wiki/nyx_assassin~1
+2026-10-27 20:56:11,479 INFO    findex.crawler.crawl: 200 32029B 0.104s attempts=1 http://127.0.0.1:55648/wiki/slark~1
+2026-10-27 20:56:11,490 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.138s: http://127.0.0.1:55649/missing/marci
+2026-10-27 20:56:11,495 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/bane
+2026-10-27 20:56:11,495 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/juggernaut
+2026-10-27 20:56:11,495 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/puck
+2026-10-27 20:56:11,506 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.169s: http://127.0.0.1:55649/missing/hoodwink
+2026-10-27 20:56:11,507 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/kunkka
+2026-10-27 20:56:11,507 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/tidehunter
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: 200 13B 0.113s attempts=1 http://127.0.0.1:55651/files/keeper_of_the_light.pdf
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/troll_warlord
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/tusk
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/techies
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/phoenix
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/dark_willow
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/snapfire
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/muerta
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/morphling
+2026-10-27 20:56:11,522 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/razor
+2026-10-27 20:56:11,534 INFO    findex.crawler.crawl: 200 27054B 0.144s attempts=1 http://127.0.0.1:55652/wiki/magnus~1
+2026-10-27 20:56:11,544 WARNING findex.crawler.crawl: FAIL redirect loop (too many redirects) after 1 attempt(s), 0.733s: http://127.0.0.1:55651/loop/a
+2026-10-27 20:56:11,546 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/vengeful_spirit
+2026-10-27 20:56:11,546 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/lion
+2026-10-27 20:56:11,571 INFO    findex.crawler.crawl: 200 13B 0.076s attempts=1 http://127.0.0.1:55649/files/puck.pdf
+2026-10-27 20:56:11,571 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/tinker
+2026-10-27 20:56:11,613 INFO    findex.crawler.crawl: 200 40820B 0.150s attempts=1 http://127.0.0.1:55648/wiki/timbersaw~1
+2026-10-27 20:56:11,636 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.065s: http://127.0.0.1:55649/missing/tinker
+2026-10-27 20:56:11,637 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/queen_of_pain
+2026-10-27 20:56:11,654 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.147s: http://127.0.0.1:55649/missing/tidehunter
+2026-10-27 20:56:11,656 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/phantom_assassin
+2026-10-27 20:56:11,656 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/dragon_knight
+2026-10-27 20:56:11,656 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/sven
+2026-10-27 20:56:11,656 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/lifestealer
+2026-10-27 20:56:11,660 INFO    findex.crawler.crawl: 200 40901B 0.118s attempts=1 http://127.0.0.1:55652/wiki/abaddon~1
+2026-10-27 20:56:11,680 INFO    findex.crawler.crawl: 200 39081B 0.193s attempts=1 http://127.0.0.1:55648/wiki/elder_titan~1
+2026-10-27 20:56:11,697 INFO    findex.crawler.crawl: 200 13B 0.152s attempts=1 http://127.0.0.1:55651/files/lion.pdf
+2026-10-27 20:56:11,698 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/lich
+2026-10-27 20:56:11,722 INFO    findex.crawler.crawl: 200 13B 0.199s attempts=1 http://127.0.0.1:55651/files/razor.pdf
+2026-10-27 20:56:11,722 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/necrophos
+2026-10-27 20:56:11,722 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/faceless_void
+2026-10-27 20:56:11,722 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/crystal_maiden
+2026-10-27 20:56:11,722 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/clockwerk
+2026-10-27 20:56:11,727 INFO    findex.crawler.crawl: 200 30851B 0.103s attempts=1 http://127.0.0.1:55648/wiki/underlord~1
+2026-10-27 20:56:11,757 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.119s: http://127.0.0.1:55649/missing/queen_of_pain
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/huskar
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/jakiro
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/doom
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/invoker
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/shadow_demon
+2026-10-27 20:56:11,758 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/ogre_magi
+2026-10-27 20:56:11,775 INFO    findex.crawler.crawl: 200 40915B 0.103s attempts=1 http://127.0.0.1:55652/wiki/earth_spirit~1
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: 200 13B 0.104s attempts=1 http://127.0.0.1:55651/files/lich.pdf
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/clinkz
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/broodmother
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/chen
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/templar_assassin
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/outworld_destroyer
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/chaos_knight
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/rubick
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/io
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/centaur_warrunner
+2026-10-27 20:56:11,802 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/skywrath_mage
+2026-10-27 20:56:11,813 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.157s: http://127.0.0.1:55649/missing/lifestealer
+2026-10-27 20:56:11,815 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/naga_siren
+2026-10-27 20:56:11,815 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/medusa
+2026-10-27 20:56:11,815 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/bristleback
+2026-10-27 20:56:11,826 INFO    findex.crawler.crawl: 200 40106B 0.136s attempts=1 http://127.0.0.1:55648/wiki/arc_warden~1
+2026-10-27 20:56:11,851 INFO    findex.crawler.crawl: 200 33916B 0.066s attempts=1 http://127.0.0.1:55652/wiki/winter_wyvern~1
+2026-10-27 20:56:11,873 INFO    findex.crawler.crawl: 200 13B 0.150s attempts=1 http://127.0.0.1:55651/files/clockwerk.pdf
+2026-10-27 20:56:11,873 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/spirit_breaker
+2026-10-27 20:56:11,873 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/ember_spirit
+2026-10-27 20:56:11,883 INFO    findex.crawler.crawl: 200 13B 0.125s attempts=1 http://127.0.0.1:55649/files/ogre_magi.pdf
+2026-10-27 20:56:11,884 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/legion_commander
+2026-10-27 20:56:11,884 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/terrorblade
+2026-10-27 20:56:11,884 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/monkey_king
+2026-10-27 20:56:11,884 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/void_spirit
+2026-10-27 20:56:11,891 INFO    findex.crawler.crawl: 200 45517B 0.156s attempts=1 http://127.0.0.1:55648/wiki/hoodwink~1
+2026-10-27 20:56:11,902 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/anti_mage
+2026-10-27 20:56:11,903 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/shadow_fiend
+2026-10-27 20:56:11,903 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/sand_king
+2026-10-27 20:56:11,903 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/windranger
+2026-10-27 20:56:11,918 INFO    findex.crawler.crawl: 200 30705B 0.083s attempts=1 http://127.0.0.1:55648/wiki/marci~1
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/drow_ranger
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/riki
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/warlock
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/wraith_king
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/viper
+2026-10-27 20:56:11,928 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/leshrac
+2026-10-27 20:56:11,946 WARNING findex.crawler.fetch: retry 2/3 in 0.69s (HTTP 503, backoff): http://127.0.0.1:55652/wiki/grimstroke~1
+2026-10-27 20:56:11,950 INFO    findex.crawler.crawl: 200 13B 0.147s attempts=1 http://127.0.0.1:55651/files/skywrath_mage.pdf
+2026-10-27 20:56:11,950 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/oracle
+2026-10-27 20:56:11,950 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/pangolier
+2026-10-27 20:56:11,951 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55651/private/mars
+2026-10-27 20:56:11,952 INFO    findex.crawler.crawl: 200 33743B 3.208s attempts=2 http://127.0.0.1:55652/wiki/lycan~1
+2026-10-27 20:56:11,975 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.160s: http://127.0.0.1:55649/missing/bristleback
+2026-10-27 20:56:11,976 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55649/private/primal_beast
+2026-10-27 20:56:11,988 INFO    findex.crawler.crawl: 200 13B 0.105s attempts=1 http://127.0.0.1:55649/files/void_spirit.pdf
+2026-10-27 20:56:12,031 INFO    findex.crawler.crawl: 200 13B 0.157s attempts=1 http://127.0.0.1:55651/files/ember_spirit.pdf
+2026-10-27 20:56:12,037 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.108s: http://127.0.0.1:55648/missing/leshrac
+2026-10-27 20:56:12,038 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/omniknight
+2026-10-27 20:56:12,038 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/bounty_hunter
+2026-10-27 20:56:12,051 INFO    findex.crawler.crawl: 200 43112B 0.089s attempts=1 http://127.0.0.1:55652/wiki/dawnbreaker~1
+2026-10-27 20:56:12,066 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55652/private/anti_mage
+2026-10-27 20:56:12,066 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55652/private/shadow_fiend
+2026-10-27 20:56:12,076 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.173s: http://127.0.0.1:55648/missing/windranger
+2026-10-27 20:56:12,077 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/spectre
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/gyrocopter
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/shadow_shaman
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/meepo
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/disruptor
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/visage
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/magnus
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/abaddon
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/earth_spirit
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/winter_wyvern
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/grimstroke
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/dawnbreaker
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/axe
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/earthshaker
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/phantom_lancer
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/storm_spirit
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/zeus
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/slardar
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/enigma
+2026-10-27 20:56:12,078 INFO    findex.crawler.crawl: robots.txt disallows http://127.0.0.1:55648/private/beastmaster
+2026-10-27 20:56:12,147 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.171s: http://127.0.0.1:55649/missing/primal_beast
+2026-10-27 20:56:12,159 WARNING findex.crawler.crawl: FAIL HTTP 404 after 1 attempt(s), 0.080s: http://127.0.0.1:55648/missing/beastmaster
+2026-10-27 20:56:12,659 WARNING findex.crawler.crawl: FAIL redirect loop (too many redirects) after 1 attempt(s), 0.620s: http://127.0.0.1:55648/loop/a
+2026-10-27 20:56:12,677 WARNING findex.crawler.crawl: FAIL redirect loop (too many redirects) after 1 attempt(s), 0.611s: http://127.0.0.1:55652/loop/a
+2026-10-27 20:56:12,705 INFO    findex.crawler.crawl: 200 36842B 0.847s attempts=2 http://127.0.0.1:55652/wiki/grimstroke~1

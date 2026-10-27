@@ -1,6 +1,6 @@
 [project]
 name = "findex"
-version = "0.5.0"
+version = "0.6.0"
 description = "Маленький пошуковий рушій: інвертований індекс, BM25/TF-IDF, мова запитів, CLI"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -13,6 +13,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "httpx>=0.28.1",
     "rich>=15.0.0",
     "typer>=0.27.3",
 ]
