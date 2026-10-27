@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{% if q %}{{ q }} — findex{% else %}findex — пошук по Dota 2 wiki{% endif %}{% endblock %}
+{% block content %}
+<form class="search" action="/" method="get" role="search"
+      hx-get="/" hx-target="#results" hx-push-url="true" hx-sync="this:replace"
+      hx-trigger="input changed delay:300ms from:#q, change from:select, submit"
+      hx-indicator=".search">
+  <div class="box">
+    <input id="q" name="q" type="search" value="{{ q }}" maxlength="200" autocomplete="off"
+           placeholder='pudge, "meat hook", stun AND NOT magic…' aria-label="Запит" {% if not q %}autofocus{% endif %}>
+    <button type="submit">Шукати</button>
+  </div>
+  <div class="opts">
+    <label>ранжування
+      <select name="scorer">
+        <option value="bm25" {% if scorer == 'bm25' %}selected{% endif %}>BM25</option>
+        <option value="tfidf" {% if scorer == 'tfidf' %}selected{% endif %}>TF-IDF</option>
+      </select>
+    </label>
+    <label>на сторінці
+      <select name="k">
+        {% for n in (10, 20, 50) %}
+        <option value="{{ n }}" {% if (req.k if req else 10) == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <span class="spinner" aria-hidden="true"></span>
+  </div>
+</form>
+<section id="results" aria-live="polite">
+  {% include "_results.html" %}
+</section>
+{% endblock %}

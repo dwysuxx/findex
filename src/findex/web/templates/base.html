@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}findex{% endblock %}</title>
+  <meta name="description" content="Пошук по статтях Dota 2 wiki: BM25, булеві запити, фрази.">
+  <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='13' cy='13' r='8' fill='none' stroke='%23c2410c' stroke-width='4'/><path d='M19 19l8 8' stroke='%23c2410c' stroke-width='4' stroke-linecap='round'/></svg>">
+  <script src="{{ url_for('static', path='/htmx-2.0.4.min.js') }}" defer></script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <a class="logo" href="/">find<span>ex</span></a>
+      <span class="tag">пошук по Dota&nbsp;2 wiki</span>
+    </header>
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="foot">
+      <a href="/docs">API (OpenAPI)</a>
+      <a href="/stats">/stats</a>
+      <a href="/health">/health</a>
+      <a href="https://github.com/dwysuxx/findex">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

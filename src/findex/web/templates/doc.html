@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ title | pretty }} — findex{% endblock %}
+{% block content %}
+<nav class="crumbs">
+  {% if q %}<a href="/?{{ {'q': q} | urlencode }}">← до результатів «{{ q }}»</a>
+  {% else %}<a href="/">← пошук</a>{% endif %}
+</nav>
+<article class="doc">
+  <h1>{{ title | pretty }}</h1>
+  <p class="meta">
+    {{ length }} токенів · ~{{ reading_min }} хв читання
+    {% if q %}· <mark>{{ num_marks }}</mark> збігів з «{{ q }}»{% endif %}
+    · <a href="/docs/{{ doc_id }}">JSON</a>
+  </p>
+  <div class="doc-body">{{ body }}</div>
+</article>
+{% endblock %}

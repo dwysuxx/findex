@@ -1,0 +1,61 @@
+{#- Фрагмент: і частина index.html, і окрема відповідь на htmx-запит. -#}
+{%- macro search_url(n) -%}
+/?{{ {'q': req.q, 'page': n, 'k': req.k, 'scorer': req.scorer} | urlencode }}
+{%- endmacro -%}
+{%- macro page_link(n, label, cls='') -%}
+<a class="{{ cls }}" href="{{ search_url(n) }}" hx-get="{{ search_url(n) }}" hx-target="#results"
+   hx-push-url="true">{{ label }}</a>
+{%- endmacro -%}
+
+{% if error %}
+  <p class="error" role="alert"><strong>Запит не вдався.</strong> {{ error }}</p>
+{% elif resp %}
+  <p class="summary">
+    {% if resp.total %}
+      {%- set n10, n100 = resp.total % 10, resp.total % 100 %}
+      <strong>{{ resp.total }}</strong>
+      {{ 'документ' if n10 == 1 and n100 != 11 else ('документи' if n10 in (2, 3, 4) and n100 not in (12, 13, 14) else 'документів') }}
+      {% if resp.pages > 1 %}· сторінка {{ resp.page }} з {{ resp.pages }}{% endif %}
+    {% else %}
+      Нічого не знайдено за запитом <strong>{{ resp.query }}</strong>.
+    {% endif %}
+    <span class="muted">· {{ '%.1f' | format(resp.took_ms) }} мс · {{ resp.scorer | upper }}</span>
+  </p>
+  {% if resp.results %}
+  <ol class="hits" start="{{ (resp.page - 1) * resp.k + 1 }}">
+    {% for r in resp.results %}
+    <li class="hit">
+      <div class="hit-head">
+        <a class="hit-title" href="/doc/{{ r.doc_id }}?{{ {'q': resp.query} | urlencode }}">{{ r.title | pretty }}</a>
+        <span class="score" title="score ({{ resp.scorer }})">{{ '%.3f' | format(r.score) }}</span>
+      </div>
+      {% if r.snippet %}<p class="snippet">{{ r.snippet | snippet }}</p>{% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% elif resp.total %}
+    <p class="muted">На цій сторінці порожньо — {{ page_link(resp.pages, 'до останньої сторінки') }}.</p>
+  {% endif %}
+  {% if resp.pages > 1 %}
+  <nav class="pager" aria-label="Сторінки">
+    {% if resp.page > 1 %}{{ page_link(resp.page - 1, '← назад', 'step') }}{% endif %}
+    {% for n in page_numbers %}
+      {% if n is none %}<span class="gap">…</span>
+      {% elif n == resp.page %}<span class="cur" aria-current="page">{{ n }}</span>
+      {% else %}{{ page_link(n, n) }}{% endif %}
+    {% endfor %}
+    {% if resp.page < resp.pages %}{{ page_link(resp.page + 1, 'далі →', 'step') }}{% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <div class="intro">
+    <p>{{ num_docs }} статей про героїв Dota&nbsp;2. Спробуйте:</p>
+    <ul class="examples">
+      {% for ex in ['pudge', '"meat hook"', 'stun AND NOT magic', '(invisibility OR blink) AND escape', 'roshan'] %}
+      <li><a href="/?{{ {'q': ex} | urlencode }}" hx-get="/?{{ {'q': ex} | urlencode }}" hx-target="#results" hx-push-url="true"><code>{{ ex }}</code></a></li>
+      {% endfor %}
+    </ul>
+    <p class="muted">Слова поруч — це AND. <code>OR</code>, <code>NOT</code> — великими літерами; дужки групують,
+      <code>"лапки"</code> шукають фразу.</p>
+  </div>
+{% endif %}

@@ -1,0 +1,9 @@
+# У контекст збірки — лише те, що COPY-ює Dockerfile
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!data/dota2wiki.jsonl
+**/__pycache__/
+**/*.pyc

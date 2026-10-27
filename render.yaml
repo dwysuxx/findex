@@ -1,0 +1,18 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> цей репозиторій.
+# Образ — з Dockerfile; деплой на кожен push у main; /health — проба готовності й живості:
+# доки вона не 200, трафік на новий інстанс не йде, а старий не зупиняється (zero-downtime).
+services:
+  - type: web
+    name: findex
+    runtime: docker
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      # PORT Render задає сам; решта — як у Dockerfile, тут лише те, що відрізняється від нього
+      - key: LOG_LEVEL
+        value: INFO
+      - key: CACHE_SIZE
+        value: "256"

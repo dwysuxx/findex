@@ -24,3 +24,5 @@ data/*_x*.jsonl
 .venv-*/
 crawl.log
 data/crawl.jsonl
+.env
+bench/web_burst.log

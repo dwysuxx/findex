@@ -437,5 +437,48 @@ def stats(
     console.print(terms)
 
 
+@app.command()
+def serve(
+    index_path: Annotated[
+        Path | None, typer.Option("--index", help="Індекс (інакше INDEX_PATH з оточення / .env)")
+    ] = None,
+    corpus: Annotated[Path | None, typer.Option(help="jsonl для текстів (інакше CORPUS_PATH)")] = None,
+    host: Annotated[str | None, typer.Option(help="Інакше HOST, за замовч. 127.0.0.1")] = None,
+    port: Annotated[int | None, typer.Option(min=1, max=65535, help="Інакше PORT, за замовч. 8000")] = None,
+    workers: Annotated[int, typer.Option(min=1, help="Процесів uvicorn (по одному на ядро)")] = 1,
+) -> None:
+    """Веб-сервер (Lab 07): JSON API + сторінка пошуку. OpenAPI — на /docs."""
+    from pydantic import ValidationError
+
+    # Через оточення, а не аргументом: воркери (--workers > 1) — окремі процеси, вони заново
+    # імпортують застосунок і читають Settings самі; змінні оточення успадковуються.
+    if index_path is not None:
+        os.environ["INDEX_PATH"] = str(index_path)
+    if corpus is not None:
+        os.environ["CORPUS_PATH"] = str(corpus)
+
+    import uvicorn
+
+    from findex.web.logs import logging_config
+    from findex.web.settings import Settings
+
+    try:
+        settings = Settings()  # pyright: ignore[reportCallIssue]  # поля приходять з оточення
+    except ValidationError as e:  # перевірка тут — щоб помилка була до старту, одним повідомленням
+        _fail("; ".join(f"{'.'.join(map(str, x['loc'])).upper()}: {x['msg']}" for x in e.errors()))
+
+    uvicorn.run(
+        "findex.web:create_app",
+        factory=True,  # create_app() у кожному воркері; рядок імпорту обов'язковий для workers > 1
+        host=host or settings.host,
+        port=port or settings.port,
+        workers=workers,
+        log_config=logging_config(settings.log_level, settings.log_json),
+        access_log=False,  # рядок доступу з request_id пише RequestContextMiddleware
+        proxy_headers=True,  # за проксі платформи: справжня схема й IP клієнта з X-Forwarded-*
+        forwarded_allow_ips="*",
+    )
+
+
 if __name__ == "__main__":
     app()

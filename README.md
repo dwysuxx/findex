@@ -2,14 +2,289 @@
 
 [![CI](https://github.com/dwysuxx/findex/actions/workflows/ci.yml/badge.svg)](https://github.com/dwysuxx/findex/actions/workflows/ci.yml)
 
+**Live:** _ще не розгорнуто — див. [L7.7](#l77-деплой)_ · API: `/docs` · `findex serve --index index.bin` локально
+
 Корпус: `data/dota2wiki.jsonl`, 124 статті про героїв. Індекс з positions:
 `Index(terms=16_106, docs=124, positions=True)`, середня довжина документа 4220 токенів.
 
+- [Lab 07 — Search on the Web](#lab-07--search-on-the-web)
 - [Lab 06 — The Async Crawler](#lab-06--the-async-crawler)
 - [Lab 05 — Concurrency and the GIL](#lab-05--concurrency-and-the-gil)
 - [Lab 04 — Typing, Testing, Packaging, CLI](#lab-04--typing-testing-packaging-cli)
 - [Lab 03 — Ranking and the Object Model](#lab-03--ranking-and-the-object-model)
 - [Lab 02 — The Inverted Index](#lab-02--the-inverted-index)
+
+---
+
+# Lab 07 — Search on the Web
+
+`findex serve` — FastAPI-застосунок поверх індексу: JSON API з валідацією й пагінацією,
+OpenAPI на `/docs`, сторінка пошуку на Jinja2 + htmx, конфіг з оточення, JSON-логи з request id,
+Docker-образ, навантажувальний тест.
+
+## L7.1 Запуск
+
+```bash
+findex index data/dota2wiki.jsonl -o index.bin --positions          # індекс, як і раніше
+findex serve --index index.bin                                      # http://127.0.0.1:8000
+findex serve --index index.bin --workers 4 --port 8080              # 4 процеси uvicorn
+
+cp .env.example .env && uvicorn findex.web:app --reload             # розробка: конфіг з .env
+docker build -t findex . && docker run --rm -p 8000:8000 findex     # образ з уже зібраним індексом
+
+uv run python -m findex.web.bench burst                             # M2: def vs async def
+uv run python -m findex.web.bench oha                               # M4: таблиця oha (≈ 2.5 хв)
+uv run python -m findex.web.bench oha --url https://<deployed>      # рядок для розгорнутого
+```
+
+| Змінна | За замовч. | Що |
+|---|---|---|
+| `INDEX_PATH` | — (обов'язкова) | файл індексу; `FilePath` — неіснуючий шлях зупиняє старт |
+| `CORPUS_PATH` | шлях з індексу | jsonl з текстами (сніпети, `/docs/{id}`) |
+| `HOST` / `PORT` | `127.0.0.1` / `8000` | у Docker — `0.0.0.0`; `PORT` платформа задає сама |
+| `LOG_LEVEL` / `LOG_JSON` | `INFO` / `true` | JSON-рядки у stdout або читабельний текст |
+| `CACHE_SIZE` | `256` | lru_cache запитів на Searcher; `0` — вимкнено |
+| `CORS_ORIGINS` | порожньо | через кому; порожньо — CORS вимкнено (UI на тому ж origin) |
+
+## L7.2 Структура
+
+| Модуль | Що всередині |
+|---|---|
+| `web/settings.py` | `Settings(BaseSettings)`: змінні оточення + `.env`, типи й межі перевіряє Pydantic |
+| `web/models.py` | моделі на межі: `SearchRequest`, `SearchResult`, `SearchResponse`, `DocumentResponse`, `StatsResponse`, `HealthResponse`, `ErrorResponse` |
+| `web/deps.py` | `get_settings`, `get_index`, `get_engine` для `Depends`; `SearchEngine` — Searcher на кожен scorer + сховище текстів |
+| `web/service.py` | `run_search` — синхронна функція без HTTP; її кличуть API, UI і бенчмарк |
+| `web/api.py` | `GET /search`, `/docs/{doc_id}`, `/stats`, `/health` |
+| `web/ui.py`, `templates/`, `static/` | `GET /`, `GET /doc/{doc_id}`; htmx 2.0.4 лежить у `static/`, без CDN |
+| `web/application.py` | `create_app()`, `lifespan`, ASGI-middleware (request id, рядок доступу, чиста 500) |
+| `web/logs.py` | `JsonFormatter`, `request_id` у `contextvar`, `logging_config()` для uvicorn |
+| `web/bench.py` | бенчмарк-застосунок з `async def`-варіантами маршруту + прогони `burst` і `oha` |
+
+Dataclass-и Lab 02–03 не змінились. У ядрі дві правки: `Searcher.search_page(q, k, offset)` → `Page(total, results)`
+(пагінація; `search()` тепер її викликає) і `threading.Lock` у `TextStore.get`. Причина замка —
+`def`-маршрути виконуються в пулі потоків, а `seek` + `readline` на спільному дескрипторі є двома
+окремими операціями: без замка потоки читали б рядки одне одного (`test_text_store_is_thread_safe`).
+
+## L7.3 M1 — API
+
+```text
+GET /search?q=pudge&k=2&page=1&scorer=bm25&snippets=true
+{"query":"pudge","scorer":"bm25","total":4,"page":1,"k":2,"pages":2,"took_ms":10.6,
+ "results":[{"doc_id":13,"title":"pudge","score":8.141226,"snippet":"**Pudge** #14 25 + 3 14 …"}, …]}
+```
+
+| Маршрут | Успіх | Помилки |
+|---|---|---|
+| `GET /search` | `SearchResponse` | 422: `q` порожній / > 200 символів, `k` ∉ [1, 100], `page` < 1, `page·k` > 1000, невідомий `scorer`, зайвий параметр (`extra="forbid"`), синтаксис запиту (`query syntax error: …`), фраза без positions; 503: індекс не завантажено |
+| `GET /docs/{doc_id}` | `{doc_id, title, length, text}` | 404 — немає документа; 422 — `doc_id` не int |
+| `GET /stats` | версія, документи, словник, токени, розмір файлу, аптайм | 503 |
+| `GET /health` | `{"status":"ok","num_docs":124}` | 503 `{"status":"unavailable"}` — індексу немає, закритий або порожній |
+| `GET /docs` | Swagger UI зі схеми, яку FastAPI побудував з анотацій | — |
+
+- **Параметри — одна модель.** `params: Annotated[SearchRequest, Query()]`: FastAPI бере поля моделі
+  з query string, а Pydantic перевіряє їх разом із `model_validator` (`page·k ≤ 1000`, бо купа
+  top-k росте з глибиною). Ту саму модель UI валідує вручну, щоб показати помилку на сторінці, а не
+  віддати 422 JSON.
+- **Індекс вантажиться один раз.** `lifespan` огортає `open_index` з Lab 03: `yield` — це весь час
+  роботи сервера, `finally` закриває індекс при SIGTERM. Тест перевіряє, що два запити бачать той
+  самий об'єкт, а після виходу індекс закрито й `/health` повертає 503.
+- **`create_app(settings)` — фабрика**, а `findex.web:app` створюється ліниво (PEP 562 `__getattr__`).
+  Імпорт пакета не вимагає `INDEX_PATH`, CORS і middleware налаштовуються до старту, а
+  `uvicorn --workers N --factory` викликає `create_app()` у кожному процесі. Модуль називається
+  `application.py`, бо підмодуль `app.py` після імпорту записав би себе в атрибут `findex.web.app`,
+  і `uvicorn findex.web:app` отримав би модуль замість застосунку. Це знайшов `test_lazy_module_app`.
+- **Помилки.** Очікувані помилки — `HTTPException` або валідація, тіло `{"detail": …}`. Непередбачений
+  виняток перехоплює `RequestContextMiddleware`: пише в лог `unhandled error` із traceback і
+  request id, а клієнту віддає `{"detail":"Internal Server Error","request_id":"…"}` (без деталей) з
+  заголовком `X-Request-Id`. Middleware написано на чистому ASGI, без `BaseHTTPMiddleware`, бо той
+  на кожен запит створює окрему задачу й потоки тіла.
+- **Логи** — один JSON на рядок у stdout. `request_id` береться з `contextvar`, тож його отримує кожен
+  запис запиту, зокрема з пулу потоків: anyio копіює контекст. Uvicorn отримує той самий `dictConfig`
+  через `log_config=` і застосовує його в кожному воркері.
+  ```json
+  {"ts": "2026-10-27T22:16:51.834+00:00", "level": "INFO", "logger": "findex.web.access", "msg": "GET /search 200", "method": "GET", "path": "/search", "query": "q=pudge&k=2", "status": 200, "ms": 367.29, "request_id": "157185ce75ae4b63"}
+  ```
+- **Залежності — `async def`.** Синхронну залежність FastAPI теж віддає в пул потоків, а це зайвий
+  перехід на кожну з трьох залежностей у кожному запиті. Роботи в них на мікросекунди.
+
+## L7.4 M2 — тести і рішення `def` чи `async def`
+
+`tests/test_web.py` — 44 тести на `TestClient`, файл індексу не потрібен:
+`app.dependency_overrides[get_index] = lambda: tiny_index` підставляє крихітний індекс з conftest.
+Покрито: успіх і пагінацію (сторінки по 3 разом дають те саме, що одна сторінка на 6), 10 випадків
+422, синтаксис запиту, фразу без positions, 404/422 для документа, `/stats`, 503 для `/health` і
+маршрутів без lifespan, справжній lifespan на файлі, чисту 500 з request id (через override, що
+кидає `RuntimeError`), CORS лише за налаштування, `Settings` з оточення та падіння на неіснуючому
+`INDEX_PATH`, UI (повна сторінка й htmx-фрагмент, помилки на сторінці, екранування перед `<mark>`),
+40 паралельних запитів через пул, потокобезпечність `TextStore`, `findex serve` з підміненим `uvicorn.run`.
+
+**Скільки коштує запит.** `q="hero damage attack"` збігається з усіма 124 документами: ≈ 45 мс CPU,
+з них ранжування < 0.5 мс, а решта — сніпети (`make_snippet` проганяє regex і `normalize` по всьому
+тексту кожного з 10 документів, ~4 200 слів). Тобто маршрут CPU-bound, і нічого в ньому не `await`-ить.
+
+**20 одночасних запитів**, 1 воркер, `CACHE_SIZE=0`, найкращий із 3 прогонів (`bench/web_burst.md`).
+Через 50 мс після старту пачки йде ще й `GET /health` — питання в тому, чи сервер відповідає,
+поки рахує:
+
+| маршрут | wall, с | min, мс | медіана, мс | max, мс | `/health` під час пачки, мс |
+|---|---|---|---|---|---|
+| `async def` (блокує цикл) | 1.063 | 94.8 | 561.0 | 1033.0 | **1007.6** |
+| `async def` + `await asyncio.to_thread(...)` | 1.104 | 172.9 | 843.0 | 1082.0 | 198.2 |
+| `def` (пул потоків FastAPI) | 1.129 | 135.7 | 1083.9 | 1126.9 | 208.6 |
+
+«Prove it» №3: два одночасні запити з `time.sleep(1)` дають **2.05 с** в `async def` і **1.04 с** у `def`.
+
+**Рішення: `def`.** Wall однаковий (≈ 20 × 55 мс): в одному процесі CPU-роботу робить один потік
+за раз, і жоден варіант пропускну здатність не додає (Lab 05). Відрізняється інше: `async def` тримає
+цикл подій усю секунду, тож `/health` (і `/static`, і `/stats`) чекає кінця пачки. Під навантаженням
+платформа вирішила б, що інстанс мертвий. З `def` цикл вільний, а `/health` чекає лише свою чергу на
+GIL (switch interval 5 мс × десятки потоків). `to_thread` вручну працює так само, як `def`, але
+пишеться довше. Нижча медіана в `async def` — не перевага, а ознака послідовної черги: перші
+запити справді закінчуються швидко, а за ними — хвіст (див. p99 нижче).
+
+## L7.5 M3 — веб-інтерфейс
+
+- `GET /` — форма (запит, BM25/TF-IDF, 10/20/50 на сторінці), результати з `<mark>` у сніпетах і
+  score, пагінація `1 … 4 5 [6] 7 8 … 20`, приклади запитів на порожній сторінці.
+- **htmx:** форма має `hx-get="/" hx-trigger="input changed delay:300ms…" hx-target="#results"
+  hx-push-url="true" hx-sync="this:replace"`, тобто пошук іде під час набору, URL оновлюється, а
+  застарілі запити скасовуються. Сервер на `HX-Request` віддає лише фрагмент `_results.html` — той
+  самий шаблон, що й усередині повної сторінки. Без JavaScript сторінка працює звичайною
+  GET-формою. `Vary: HX-Request` повідомляє кешам, що одна URL має дві форми відповіді.
+  Відновлення історії htmx (`HX-History-Restore-Request`) отримує цілу сторінку.
+- `GET /doc/{id}?q=…` — повний текст із підсвіченими словами запиту, кількість збігів, посилання на JSON.
+- **Безпека:** текст спершу екранується (`markupsafe.escape`), а `<mark>` додається потім, тож
+  `<script>` з корпусу лишається текстом (`test_render_escapes_before_marking`). Jinja2 autoescape
+  увімкнено.
+- Системний шрифт, ширина 760 px, світла й темна тема через `prefers-color-scheme`, адаптивна верстка.
+
+## L7.6 M4 — Docker
+
+`Dockerfile` побудовано за шаблоном uv і має два етапи:
+1. **builder:** `python:3.12-slim` + `uv 0.13.1`. Спершу `uv sync --locked --no-install-project --no-dev`,
+   тож шар залежностей інвалідується лише зміною `uv.lock`. Потім проєкт `--no-editable`, потім
+   `findex index` всередині образу. Pickle збирається тим самим Python, що й у runtime, а шляхи в
+   `DocMeta` — POSIX: локальний `index.bin` з Windows має `data\dota2wiki.jsonl#…`.
+2. **runtime:** `python:3.12-slim`, лише `.venv`, `index.bin` і корпус; користувач `app` (uid 10001),
+   не root. `ENV INDEX_PATH=… HOST=0.0.0.0 PORT=8000 LOG_JSON=true`, `HEALTHCHECK` на `/health`,
+   `CMD ["findex", "serve"]` в exec-формі: процес — PID 1 і сам отримує SIGTERM.
+
+`.dockerignore` пропускає в контекст тільки те, що копіює Dockerfile. Docker на робочій машині не
+встановлено, тому образ збирає **CI-джоб `docker`**: build → `docker run` → `/health` = ok, `/search`
+знаходить pudge, `?k=abc` → 422, `id -u` = 10001 → `docker stop` → у логах є `"index closed"`,
+код виходу 0 (тобто lifespan teardown на SIGTERM спрацював).
+
+## L7.7 Деплой
+
+`render.yaml` — Render Blueprint: Docker-сервіс, free-план, автодеплой з `main`,
+`healthCheckPath: /health`. Поки `/health` ≠ 200, трафік на новий інстанс не йде, а старий працює
+далі; якщо проба падає на живому інстансі, Render його перезапускає. Порядок дій: Dashboard → New →
+Blueprint → репозиторій → Apply. Логи (JSON) видно на вкладці Logs.
+
+Пам'ять: один процес із завантаженим індексом і прогрітими сніпетами займає **≈ 121 МБ** RSS. Тож на
+free-плані (512 МБ, 0.1 CPU) — 1 воркер. `--workers 4` дав би ~480 МБ і жодного виграшу на 0.1 ядра.
+
+> **Статус:** сервіс ще не розгорнуто — для цього потрібен акаунт Render власника репозиторію. Після
+> деплою: URL — нагору README, рядок `deployed` — `python -m findex.web.bench oha --url <URL>`.
+
+## L7.8 Навантажувальний тест
+
+`oha 1.16 -z 30s`, `q="hero damage attack"`, `CACHE_SIZE=0`, після 3 с прогріву; i7-9700KF (8 ядер),
+Windows 10, Python 3.14.8; oha на тій самій машині. Сирі дані — `bench/web_results.jsonl`.
+
+| Target | Route | Concurrency | RPS | p50 (ms) | p95 | p99 |
+|---|---|---|---|---|---|---|
+| local, 1 worker, `async def` | `/search` (`/bench/search-async`) | 50 | 19.2 | 2013 | 8380 | **21475** |
+| local, 1 worker, `async def` + `to_thread` | `/search` (`/bench/search-thread`) | 50 | 18.4 | 2702 | 4000 | 4947 |
+| local, 1 worker, `def` | `/search` | 50 | 17.7 | 2828 | 3937 | 5446 |
+| local, 4 workers, `def` | `/search` | 50 | **70.3** | 638 | 1355 | 1528 |
+| deployed | `/search` | 20 | — | — | — | — |
+
+Жодної не-200 відповіді в жодному прогоні. Перевірка законом Літтла (`L = λ·W` → `W ≈ c / RPS`):
+50 / 17.7 = 2.8 с ≈ p50 у `def`, а 50 / 70.3 = 0.71 с ≈ p50 з 4 воркерами. Сервер весь час
+насичений, а затримка — це черга.
+
+**Що пояснює кожен рядок.**
+- **Рядки 1–3 мають ту саму стелю — GIL (Lab 05).** 45 мс CPU на запит дають ≤ 22 RPS на процес,
+  і виміряно 17.7–19.2 незалежно від `def`/`async def`. Потоки пулу не додають пропускної
+  здатності для CPU-роботи, вони лише змінюють, хто й скільки чекає.
+- **`async def` — баг Lab 06.** Поки рахується запит, цикл не приймає й не читає нові з'єднання.
+  Готові запити обслуговуються поштучно, тож p50 найменший (2.0 с), але черга несправедлива: хто не
+  встиг потрапити в «вікно» між блокуваннями, чекає багато циклів. Звідси **p99 = 21.5 с, у 10.7 раза
+  більше за p50**. Плюс увесь цей час не відповідає `/health` (M2: 1 с).
+- **`def` і `to_thread` — розподіл процесора.** 40 потоків по черзі отримують GIL кожні 5 мс, всі
+  запити просуваються разом, тож кожен триває ≈ N × 45 мс. Медіана вища (2.8 с), зате хвіст
+  обмежений: **p99/p50 ≈ 1.9**, p99 у 4 рази менший, ніж в `async def`, і цикл подій вільний.
+  `to_thread` і `def` — один механізм (пул anyio проти пулу asyncio), різниця в межах шуму.
+- **4 воркери — 4 процеси, 4 GIL (Lab 05, `ProcessPoolExecutor`).** **3.97×** RPS (70.3 проти 17.7)
+  на 8 ядрах, p99 у 3.6 раза менший. Майже лінійно, бо процеси нічим не обмінюються: кожен має свій
+  індекс, і pickle-податку з Lab 05 немає. Ціна — пам'ять: ×4 по ~121 МБ. Різниця p99 між 1 і 4
+  воркерами — це довжина черги на один GIL: 50 запитів на один процес проти ~12 на кожен із чотирьох.
+
+**Наступний крок оптимізації** (не робив, бо бенчмарк мав міряти саме CPU-маршрут): сніпети — 99 %
+часу. Кеш сніпетів за `(doc_id, terms)` або збережені в індексі зміщення слів зробили б запит
+дешевшим у десятки разів, і стеля на процес зросла б так само.
+
+## L7.9 «Prove it to yourself»
+
+| Експеримент | Результат |
+|---|---|
+| `curl "/search?k=abc"` | 422, `detail` — список із двох помилок: `missing` для `q` і `int_parsing` для `k`, з `loc` і `input`. Сторінку `/docs` згенерував FastAPI зі схеми OpenAPI, яку побудував з анотацій |
+| `SearchResult(doc_id="12", title="pudge", score="0.9")` | `doc_id=12` (`int`), `score=0.9` (`float`) — Pydantic перетворює типи; `doc_id="twelve"` → `ValidationError: Input should be a valid integer [type=int_parsing]` |
+| `time.sleep(1)` у маршруті, 2 одночасні запити | `async def` — 2.05 с, `def` — 1.04 с |
+| `INDEX_PATH=nope.bin` | `findex serve` → `Помилка: INDEX_PATH: Path does not point to a file` і код 1 ще до uvicorn; `uvicorn findex.web:app` → `ValidationError` під час імпорту застосунку, до відкриття сокета |
+| `oha -c 50`, 1 → 4 воркери | 17.7 → 70.3 RPS, p99 5446 → 1528 мс (L7.8) |
+
+## L7.10 Рефлексія (коротко)
+
+1. `curl` відкриває TCP. **Uvicorn** приймає сокет у своєму циклі подій, розбирає HTTP (httptools) і
+   викликає ASGI-застосунок `app(scope, receive, send)`: `scope` містить метод, шлях і заголовки.
+   **Starlette** проганяє запит крізь middleware (наш request id, далі обробник винятків) і роутер.
+   **FastAPI** для знайденого маршруту розв'язує залежності, збирає аргументи з query/path і
+   віддає їх **Pydantic** на перевірку (помилка → 422). Потім кличе функцію (`def` — у пулі потоків),
+   перевіряє й серіалізує результат через `response_model`, і відповідь іде назад через `send`.
+2. WSGI — синхронний виклик `app(environ, start_response)`: один запит займає потік або процес до
+   кінця, тож 1 000 повільних з'єднань = 1 000 потоків. ASGI — `async`-виклик: очікування мережі
+   не займає потік, один процес тримає тисячі з'єднань (Lab 06), плюс є WebSocket і lifespan.
+3. FastAPI під час оголошення маршруту читає сигнатуру (`inspect.signature` + `get_type_hints` —
+   анотації доступні в runtime, Lab 04) і будує з неї Pydantic-модель параметрів. `Query(ge=1, le=100)`
+   стає обмеженням поля. На запит значення з query string проходить валідацію, а `ValidationError`
+   перетворюється на 422 зі списком помилок. Та сама схема дає OpenAPI.
+4. Pydantic — на межі, де дані не наші: query string, змінні оточення, JSON-відповідь. Dataclass —
+   усередині (`Posting`, `DocMeta`, `ranking.SearchResult`): там дані вже перевірені, а валідація на
+   кожен із сотень тисяч постінгів коштувала б і часу, і пам'яті. Між ними — `from_internal`.
+5. `Depends(fn)` — FastAPI викликає `fn` перед маршрутом (з її власними залежностями) і передає
+   результат аргументом. Маршрут не знає, звідки береться індекс, тому тест робить
+   `app.dependency_overrides[get_index] = lambda: tiny_index` і маршрут не змінюється.
+6. `def`. Під 50 одночасними запитами `async def` блокує цикл: пропускна здатність та сама (GIL),
+   але p99 = 21 с замість 5.4 с, а `/health` і статика стоять у черзі за BM25, тож платформа
+   вважає інстанс мертвим (L7.4, L7.8).
+7. Конфіг з оточення означає, що один і той самий образ працює всюди, а відрізняються лише змінні
+   (12-factor III). `config.py` вимагав би нової збірки для кожного середовища і рано чи пізно
+   потрапив би в git із секретами. Для одного образу в dev і prod потрібно: жодних шляхів і адрес у
+   коді, всі налаштування читаються з оточення з розумними значеннями за замовчуванням, `PORT` — від
+   платформи, логи йдуть у stdout, а не в файл.
+8. Один воркер — це один GIL: 50 запитів ділять один потік виконання байткоду, і p99 — це час
+   проходження всієї черги (5.4 с). Чотири воркери — чотири процеси з окремими GIL (Lab 05), черга
+   на кожному вчетверо коротша: p99 = 1.5 с, RPS ×3.97.
+9. Корисний `/health` перевіряє, що застосунок справді може обслужити запит: індекс завантажено, не
+   закрито, і в ньому є документи. Сам факт, що процес відповідає, нічого не каже. При цьому
+   перевірка має бути дешевою: проба приходить кожні кілька секунд. На 503 Render не пускає трафік на
+   новий деплой (старий працює далі), а на живому інстансі після кількох невдач перезапускає контейнер.
+
+## L7.11 Статус
+
+- [x] `GET /search` (`q`, `k`, `scorer`, `page`, `snippets` з валідацією; пагінація), `/docs/{id}`, `/stats`, `/health`; OpenAPI на `/docs`
+- [x] `lifespan` вантажить індекс один раз; `Depends` для індексу й налаштувань; `pydantic-settings` з оточення / `.env`
+- [x] Pydantic-моделі на межі, dataclass-и всередині; чисті JSON-помилки; request id у логах і заголовку
+- [x] `TestClient` + `dependency_overrides`: успіх, 422, 404, 503 для `/health`, 500
+- [x] `def` чи `async def` — вирішено за вимірами (L7.4)
+- [x] Jinja2 + htmx: пошук під час набору, підсвічені сніпети, пагінація, сторінка документа, статичний CSS
+- [x] Багатоетапний Dockerfile на uv, не root; перевіряється в CI (локально Docker не встановлено)
+- [ ] Деплой і публічний URL — `render.yaml` готовий, потрібен акаунт Render (L7.7)
+- [x] Таблиця `oha`: 1 воркер × 3 режими + 4 воркери, p50/p95/p99, пояснення; рядок `deployed` — після деплою
+- [x] Git-тег `lab-07`
+- [ ] Stretch (API-ключ + rate limit, `ETag`/`Cache-Control`, OpenTelemetry) — не виконано
 
 ---
 

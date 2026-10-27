@@ -7,6 +7,7 @@
 import contextlib
 import json
 import logging
+import threading
 from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
@@ -19,12 +20,17 @@ log = logging.getLogger(__name__)
 
 
 class TextStore:
-    """Ліниво читає текст документа з jsonl за байтовим зміщенням (корпус у пам'ять не вантажиться)."""
+    """Ліниво читає текст документа з jsonl за байтовим зміщенням (корпус у пам'ять не вантажиться).
+
+    Один дескриптор на всі читання: seek + readline — дві операції над спільною позицією файлу,
+    тож без замка два потоки (веб-сервер, Lab 07) читали б рядки один одного.
+    """
 
     def __init__(self, path: Path | str) -> None:
         self.path = Path(path)
         self._offsets: dict[str, int] | None = None
         self._fh: BinaryIO | None = None
+        self._lock = threading.Lock()
 
     def _build(self) -> dict[str, int]:
         offsets: dict[str, int] = {}
@@ -39,24 +45,27 @@ class TextStore:
 
     def get(self, doc_id: str) -> str | None:
         try:
-            if self._offsets is None:
-                self._offsets = self._build()  # тепер pyright знає, що це dict, без ignore
-            offset = self._offsets.get(doc_id)
-            if offset is None:
-                return None
-            if self._fh is None:
-                self._fh = self.path.open("rb")
-            self._fh.seek(offset)
-            obj = json.loads(self._fh.readline().decode("utf-8", "replace"))
+            with self._lock:
+                if self._offsets is None:
+                    self._offsets = self._build()  # тепер pyright знає, що це dict, без ignore
+                offset = self._offsets.get(doc_id)
+                if offset is None:
+                    return None
+                if self._fh is None:
+                    self._fh = self.path.open("rb")
+                self._fh.seek(offset)
+                line = self._fh.readline()
+            obj = json.loads(line.decode("utf-8", "replace"))  # розбір — уже поза замком
             return str(obj["text"]).replace("\n", " ")  # так само, як у corpus.py
         except (OSError, ValueError, KeyError) as e:
             log.warning("Не вдалося прочитати текст %s з %s: %s", doc_id, self.path, e)
             return None
 
     def close(self) -> None:
-        if self._fh is not None:
-            self._fh.close()
-            self._fh = None
+        with self._lock:
+            if self._fh is not None:
+                self._fh.close()
+                self._fh = None
 
 
 def make_snippet(text: str, terms: Iterable[str], width: int = 80, mark: str = "**") -> str:
