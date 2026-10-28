@@ -28,6 +28,7 @@ URL, а спільна asyncio.Queue містить «токени» хості�
 
 import asyncio
 import logging
+import math
 import time
 from collections import deque
 from collections.abc import AsyncGenerator, Callable, Iterable
@@ -98,6 +99,7 @@ class _Host:
         self.waiting = 0  # з них ще не взятих воркером
         self.delay = delay
         self.next_start = 0.0
+        self.last_start = -math.inf  # фактичний старт останнього запиту (loop.time())
         self.in_flight = 0
 
 
@@ -150,8 +152,8 @@ async def crawl(
             host.tokens += 1
             host.waiting += 1
             start = max(loop.time(), host.next_start)
-            # Резервуємо слот: старти рознесені на delay — з точністю до кроку годинника циклу
-            # (на Windows з Python 3.12 monotonic тікає по 15.6 мс; з 3.13 — точний лічильник).
+            # Резервуємо слот: старти рознесені на delay. Це план — таймер може спрацювати пізніше
+            # (Windows будить цикл кроками ~15.6 мс), тому точну паузу тримає перевірка у visit.
             host.next_start = start + host.delay
             if start <= loop.time():
                 ready.put_nowait(host)
@@ -199,6 +201,12 @@ async def crawl(
                 stats.max_in_flight_per_host.get(host.key, 0), host.in_flight
             )
             try:
+                # Пауза — від фактичного попереднього старту, а не від запланованого: якщо таймер слота
+                # A спрацював на 11 мс пізніше, B інакше стартував би через 39 мс після A (впіймав CI).
+                # Після sleep перевіряємо знову: інший воркер цього хоста міг стартувати першим.
+                while (wait := host.last_start + host.delay - loop.time()) > 0:
+                    await asyncio.sleep(wait)
+                host.last_start = loop.time()  # без await між перевіркою і записом
                 result = await fetch(client, url, timeout=timeout)
             finally:
                 stats.in_flight -= 1
