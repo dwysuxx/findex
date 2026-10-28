@@ -1,0 +1,6 @@
+data/*
+!data/items_base.json
+__pycache__/
+*.pyc
+.venv/
+venv/
