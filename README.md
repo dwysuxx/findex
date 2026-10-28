@@ -7,7 +7,7 @@
 [![CI](https://github.com/dwysuxx/findex/actions/workflows/ci.yml/badge.svg)](https://github.com/dwysuxx/findex/actions/workflows/ci.yml)
 
 **Live:** https://findex-ul7i.onrender.com · API: [`/docs`](https://findex-ul7i.onrender.com/docs) ·
-**демо-відео (2–3 хв):** _посилання з'явиться після запису_ · `findex serve --index index.bin` локально
+`findex serve --index index.bin` локально
 (free-план Render: після 15 хв без запитів сервіс засинає, перший запит — 30–60 с)
 
 ![Пошук під час набору: ключові слова, потім «за змістом»](docs/demo.gif)
@@ -466,7 +466,6 @@ Magic Resist 25 %») — бессенсовні вектори біля «цен
 - [x] `pytest-benchmark` для `search` і `build_index`, у CI — порівняння з baseline (поріг 2×)
 - [x] M3: `findex embed`; `mode=keyword|semantic|hybrid` у CLI, API й UI; RRF; P@5 на 15 запитах з парафразами й поясненням; дві моделі
 - [x] README: live URL, GIF, головні цифри, діаграма архітектури, усі заміри Lab 01–08, обмеження
-- [ ] Демо-відео 2–3 хв — записує автор (план — у `ЗАХИСТ.md`)
 - [x] `v1.0.0`, теги `lab-08` і `v1.0.0`; деплой оновлено
 - [ ] Stretch (HNSW + recall@10, інкрементальні ембединги, `findex ask` з LLM) — не виконано
 
