@@ -29,6 +29,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY data/dota2wiki.jsonl ./data/
 RUN .venv/bin/findex index data/dota2wiki.jsonl --out index.bin --positions
 
+# Lab 08: ембединги — з репозиторію (findex embed: 4.4 тис. шматків ≈ 3 хв CPU, на безкоштовному
+# збирачі — довше), а модель (≈ 90 МБ ONNX) — запікається в образ: runtime стартує без мережі.
+# Модель — саме та, якою рахували вектори (записана у файлі); відбиток корпусу перевіряє lifespan.
+COPY data/dota2wiki.emb.npz ./data/
+RUN .venv/bin/python -c "from findex.semantic import FastEmbedder, SemanticIndex; \
+    FastEmbedder(SemanticIndex.load('data/dota2wiki.emb.npz').model, cache_dir='/app/models')"
+
 # --- runtime: лише інтерпретатор, .venv, індекс і корпус (для сніпетів і /docs/{id})
 FROM python:3.12-slim
 
@@ -39,12 +46,17 @@ WORKDIR /app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 COPY --from=builder --chown=app:app /app/index.bin /app/index.bin
 COPY --from=builder --chown=app:app /app/data/dota2wiki.jsonl /app/data/dota2wiki.jsonl
+COPY --from=builder --chown=app:app /app/data/dota2wiki.emb.npz /app/data/dota2wiki.emb.npz
+COPY --from=builder --chown=app:app /app/models /app/models
 
 # Конфіг — лише змінні оточення (12-factor III); будь-яку можна перекрити `docker run -e`.
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
     INDEX_PATH=/app/index.bin \
     CORPUS_PATH=/app/data/dota2wiki.jsonl \
+    EMBEDDINGS_PATH=/app/data/dota2wiki.emb.npz \
+    FASTEMBED_CACHE_PATH=/app/models \
+    HF_HUB_OFFLINE=1 \
     HOST=0.0.0.0 \
     PORT=8000 \
     LOG_LEVEL=INFO \

@@ -1,6 +1,6 @@
 {#- Фрагмент: і частина index.html, і окрема відповідь на htmx-запит. -#}
 {%- macro search_url(n) -%}
-/?{{ {'q': req.q, 'page': n, 'k': req.k, 'scorer': req.scorer} | urlencode }}
+/?{{ {'q': req.q, 'page': n, 'k': req.k, 'scorer': req.scorer, 'mode': req.mode} | urlencode }}
 {%- endmacro -%}
 {%- macro page_link(n, label, cls='') -%}
 <a class="{{ cls }}" href="{{ search_url(n) }}" hx-get="{{ search_url(n) }}" hx-target="#results"
@@ -19,15 +19,16 @@
     {% else %}
       Нічого не знайдено за запитом <strong>{{ resp.query }}</strong>.
     {% endif %}
-    <span class="muted">· {{ '%.1f' | format(resp.took_ms) }} мс · {{ resp.scorer | upper }}</span>
+    <span class="muted">· {{ '%.1f' | format(resp.took_ms) }} мс ·
+      {{ resp.scorer | upper if resp.mode == 'keyword' else ('за змістом' if resp.mode == 'semantic' else 'гібрид BM25 + зміст') }}</span>
   </p>
   {% if resp.results %}
   <ol class="hits" start="{{ (resp.page - 1) * resp.k + 1 }}">
     {% for r in resp.results %}
     <li class="hit">
       <div class="hit-head">
-        <a class="hit-title" href="/doc/{{ r.doc_id }}?{{ {'q': resp.query} | urlencode }}">{{ r.title | pretty }}</a>
-        <span class="score" title="score ({{ resp.scorer }})">{{ '%.3f' | format(r.score) }}</span>
+        <a class="hit-title" href="/doc/{{ r.doc_id }}?{{ {'q': resp.query, 'mode': resp.mode} | urlencode }}">{{ r.title | pretty }}</a>
+        <span class="score" title="{{ resp.scorer if resp.mode == 'keyword' else ('косинус' if resp.mode == 'semantic' else 'RRF') }}">{{ '%.3f' | format(r.score) }}</span>
       </div>
       {% if r.snippet %}<p class="snippet">{{ r.snippet | snippet }}</p>{% endif %}
     </li>
@@ -55,6 +56,15 @@
       <li><a href="/?{{ {'q': ex} | urlencode }}" hx-get="/?{{ {'q': ex} | urlencode }}" hx-target="#results" hx-push-url="true"><code>{{ ex }}</code></a></li>
       {% endfor %}
     </ul>
+    {% if semantic %}
+    <p>Або природною мовою — режим «за змістом» знайде героя, навіть якщо слів запиту в статті немає:</p>
+    <ul class="examples">
+      {% for ex in ['a fat butcher who drags enemies to him', 'hero who turns invisible and stabs from behind', 'frozen witch from the north'] %}
+      {%- set u = {'q': ex, 'mode': 'semantic'} | urlencode %}
+      <li><a href="/?{{ u }}" hx-get="/?{{ u }}" hx-target="#results" hx-push-url="true"><code>{{ ex }}</code></a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
     <p class="muted">Слова поруч — це AND. <code>OR</code>, <code>NOT</code> — великими літерами; дужки групують,
       <code>"лапки"</code> шукають фразу.</p>
   </div>

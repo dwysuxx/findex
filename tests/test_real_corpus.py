@@ -48,6 +48,7 @@ def test_three_sanity_checks_on_real_corpus(real_index: Index) -> None:
 
 def test_precision_at_5_bm25_not_worse(real_index: Index) -> None:
     queries = json.loads((Path(__file__).parent / "eval_queries.json").read_text(encoding="utf-8"))
+    queries = [q for q in queries if not q.get("paraphrase")]  # парафрази — для семантики (Lab 08)
     mean: dict[str, float] = {}
     for name, scorer in (("tfidf", TfIdf()), ("bm25", BM25())):
         s = Searcher(real_index, scorer)
@@ -62,7 +63,12 @@ def test_readme_reports_run(capsys: pytest.CaptureFixture[str]) -> None:
     from findex import evaluate, sanity_checks
 
     sanity_checks.main(REAL_CORPUS, "pickle")
-    evaluate.main(REAL_CORPUS, Path(__file__).parent / "eval_queries.json", 5, "pickle", suggest=False)
+    means = evaluate.main(
+        REAL_CORPUS, Path(__file__).parent / "eval_queries.json", 5, "pickle", suggest=False
+    )
     out = capsys.readouterr().out
     assert "Перевірка 1" in out and "Перевірка 3" in out
-    assert "| `remnant` | 4 |" in out and "середнє (10 запитів)" in out
+    assert "| `remnant` |  | 4 |" in out and "середнє: оригінальні (10 запитів)" in out
+    assert "середнє: парафрази (5 запитів)" in out
+    # ключові слова на парафразах майже безсилі — саме тому Lab 08 додає семантику
+    assert means["paraphrase"]["BM25"] < means["original"]["BM25"]

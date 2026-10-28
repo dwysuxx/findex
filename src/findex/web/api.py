@@ -14,6 +14,7 @@ from findex.web.models import (
     HealthResponse,
     SearchRequest,
     SearchResponse,
+    SemanticStats,
     StatsResponse,
 )
 from findex.web.service import run_search
@@ -22,7 +23,7 @@ router = APIRouter(tags=["api"])
 
 _ERRORS: dict[int | str, dict[str, Any]] = {
     422: {"model": ErrorResponse, "description": "Невалідні параметри або синтаксис запиту"},
-    503: {"model": ErrorResponse, "description": "Індекс не завантажено"},
+    503: {"model": ErrorResponse, "description": "Індекс не завантажено або semantic/hybrid без ембедингів"},
 }
 
 
@@ -55,6 +56,7 @@ def document(doc_id: int, engine: EngineDep) -> DocumentResponse:
 @router.get("/stats", response_model=StatsResponse, responses=_ERRORS)
 async def stats(request: Request, index: IndexDep, settings: SettingsDep) -> StatsResponse:
     """Розмір індексу і аптайм. Усе — O(кількість документів), без обходу постінгів."""
+    sem = getattr(request.app.state, "semantic", None)
     return StatsResponse(
         version=__version__,
         num_docs=index.num_docs,
@@ -64,6 +66,7 @@ async def stats(request: Request, index: IndexDep, settings: SettingsDep) -> Sta
         has_positions=index.has_positions,
         index_bytes=settings.index_path.stat().st_size,
         uptime_s=round(time.monotonic() - request.app.state.started_at, 3),
+        semantic=SemanticStats(model=sem.model, chunks=len(sem.chunk_doc), dim=sem.dim) if sem else None,
     )
 
 

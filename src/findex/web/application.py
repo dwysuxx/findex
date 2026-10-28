@@ -14,6 +14,7 @@ import time
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,6 +48,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
                 "load_ms": round((time.perf_counter() - t0) * 1000, 1),
             },
         )
+        app.state.semantic = app.state.embedder = None
+        if settings.embeddings_path is not None:
+            _load_semantic(app, settings)
         try:
             yield
         finally:
@@ -55,6 +59,31 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
                 engine.close()
             app.state.index = app.state.engine = None
             log.info("index closed")
+
+
+def _load_semantic(app: FastAPI, settings: Settings) -> None:
+    """Ембединги + модель — раз на процес, як і індекс. Модель — та, якою рахували ембединги."""
+    from findex.semantic import FastEmbedder, SemanticIndex, check_corpus
+
+    assert settings.embeddings_path is not None
+    t0 = time.perf_counter()
+    index = app.state.index
+    sem = SemanticIndex.load(settings.embeddings_path)
+    if sem.num_docs != index.num_docs:
+        raise RuntimeError(
+            f"{settings.embeddings_path}: {sem.num_docs} документів, а в індексі {index.num_docs}"
+        )
+    check_corpus(sem, settings.corpus_path or Path(index.doc_meta[0].path.rpartition("#")[0]))
+    app.state.embedder = FastEmbedder(sem.model, cache_dir=settings.fastembed_cache_path)
+    app.state.semantic = sem
+    log.info(
+        "embeddings loaded",
+        extra={
+            "model": sem.model,
+            "chunks": len(sem.chunk_doc),
+            "load_ms": round((time.perf_counter() - t0) * 1000, 1),
+        },
+    )
 
 
 class RequestContextMiddleware:

@@ -26,3 +26,8 @@ crawl.log
 data/crawl.jsonl
 .env
 bench/web_burst.log
+.cache/
+*.emb.npz
+!data/dota2wiki.emb.npz
+.benchmarks/
+scalene-profile.json

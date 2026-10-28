@@ -9,6 +9,7 @@ import time
 
 from fastapi import HTTPException
 
+from findex.engine import SemanticUnavailable
 from findex.query import QueryParseError, parse
 from findex.web.deps import SearchEngine
 from findex.web.models import SearchRequest, SearchResponse, SearchResult
@@ -17,7 +18,11 @@ from findex.web.models import SearchRequest, SearchResponse, SearchResult
 def run_search(engine: SearchEngine, req: SearchRequest) -> SearchResponse:
     t0 = time.perf_counter()
     try:
-        page = engine.searcher(req.scorer).search_page(req.q, req.k, req.offset, snippets=req.snippets)
+        page = engine.searcher(req.scorer).search_page(
+            req.q, req.k, req.offset, snippets=req.snippets, mode=req.mode
+        )
+    except SemanticUnavailable as e:
+        raise HTTPException(status_code=503, detail=f"mode={req.mode}: {e}") from e
     except QueryParseError as e:
         raise HTTPException(status_code=422, detail=f"query syntax error: {e}") from e
     except ValueError as e:  # фраза в індексі без positions
@@ -25,6 +30,7 @@ def run_search(engine: SearchEngine, req: SearchRequest) -> SearchResponse:
     return SearchResponse(
         query=req.q,
         scorer=req.scorer,
+        mode=req.mode,
         total=page.total,
         page=req.page,
         k=req.k,

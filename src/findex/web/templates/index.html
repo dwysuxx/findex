@@ -3,7 +3,7 @@
 {% block content %}
 <form class="search" action="/" method="get" role="search"
       hx-get="/" hx-target="#results" hx-push-url="true" hx-sync="this:replace"
-      hx-trigger="input changed delay:300ms from:#q, change from:select, submit"
+      hx-trigger="input changed delay:300ms from:#q, change from:select, change from:input[name=mode], submit"
       hx-indicator=".search">
   <div class="box">
     <input id="q" name="q" type="search" value="{{ q }}" maxlength="200" autocomplete="off"
@@ -11,6 +11,13 @@
     <button type="submit">Шукати</button>
   </div>
   <div class="opts">
+    {% if semantic %}
+    <fieldset class="modes" aria-label="Режим пошуку">
+      {% for value, label in (('keyword', 'ключові слова'), ('semantic', 'за змістом'), ('hybrid', 'гібрид')) %}
+      <label><input type="radio" name="mode" value="{{ value }}" {% if mode == value %}checked{% endif %}> {{ label }}</label>
+      {% endfor %}
+    </fieldset>
+    {% endif %}
     <label>ранжування
       <select name="scorer">
         <option value="bm25" {% if scorer == 'bm25' %}selected{% endif %}>BM25</option>

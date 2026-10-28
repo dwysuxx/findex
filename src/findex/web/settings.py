@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     port: int = Field(8000, ge=1, le=65535)
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     log_json: bool = True  # JSON-рядки у stdout (платформа їх парсить); False — читабельний текст
+    # Lab 08: ембединги (findex embed). None — семантичний і гібридний режими вимкнені (503)
+    embeddings_path: FilePath | None = None
+    # каталог моделі fastembed; у Docker модель запечена в образ, тож старт без мережі
+    fastembed_cache_path: str | None = None
     cache_size: int = Field(256, ge=0)  # lru_cache запитів на один Searcher; 0 — вимкнено (бенчмарк)
     # CORS_ORIGINS=https://a.example,https://b.example — порожньо: CORS вимкнено (UI на тому ж origin)
     cors_origins: Annotated[list[str], NoDecode] = []

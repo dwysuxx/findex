@@ -8,5 +8,10 @@
   {"query": "global", "relevant": ["zeus", "spectre", "silencer", "nature_s_prophet", "ancient_apparition"]},
   {"query": "invisibility OR invisible", "relevant": ["riki", "clinkz", "weaver", "bounty_hunter", "nyx_assassin", "templar_assassin"]},
   {"query": "\"mana burn\" OR \"mana break\"", "relevant": ["anti_mage", "nyx_assassin"]},
-  {"query": "blink", "relevant": ["anti_mage", "queen_of_pain"]}
+  {"query": "blink", "relevant": ["anti_mage", "queen_of_pain"]},
+  {"query": "butcher who drags his victims close with a chain", "relevant": ["pudge"], "paraphrase": true},
+  {"query": "hero who cannot be seen and stabs foes in the back", "relevant": ["riki", "bounty_hunter", "nyx_assassin"], "paraphrase": true},
+  {"query": "icy sorceress who chills everyone around her", "relevant": ["crystal_maiden", "winter_wyvern"], "paraphrase": true},
+  {"query": "transforms into a huge fire-breathing lizard", "relevant": ["dragon_knight", "jakiro"], "paraphrase": true},
+  {"query": "makes fake copies of himself to fool opponents", "relevant": ["phantom_lancer", "naga_siren", "terrorblade", "chaos_knight"], "paraphrase": true}
 ]

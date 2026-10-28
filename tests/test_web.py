@@ -133,7 +133,7 @@ def test_openapi_docs_page_still_works(client: TestClient) -> None:
     assert client.get("/docs").status_code == 200
     schema = client.get("/openapi.json").json()
     params = {p["name"]: p for p in schema["paths"]["/search"]["get"]["parameters"]}
-    assert set(params) == {"q", "k", "page", "scorer", "snippets"}
+    assert set(params) == {"q", "k", "page", "scorer", "mode", "snippets"}
     assert params["k"]["schema"]["maximum"] == 100 and params["q"]["required"] is True
     assert "/" not in schema["paths"]  # HTML-сторінки не в схемі API
 

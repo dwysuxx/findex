@@ -17,7 +17,9 @@ from fastapi import Depends, HTTPException, Request
 from findex.engine import Searcher
 from findex.index import Index
 from findex.ranking import BM25, TfIdf
+from findex.semantic import Embedder, SemanticIndex
 from findex.snippets import TextStore
+from findex.vector import VectorIndex
 from findex.web.models import ScorerName
 from findex.web.settings import Settings
 
@@ -43,11 +45,20 @@ class SearchEngine:
     кеш запитів скидався б щоразу.
     """
 
-    def __init__(self, index: Index, settings: Settings) -> None:
+    def __init__(
+        self,
+        index: Index,
+        settings: Settings,
+        semantic: SemanticIndex | None = None,
+        embedder: Embedder | None = None,
+    ) -> None:
         self.index = index
+        self.semantic = semantic
+        self.embedder = embedder
         self._corpus = settings.corpus_path
         self._cache_size = settings.cache_size
         self._searchers: dict[ScorerName, Searcher] = {}
+        self._vector: VectorIndex | None = None  # Lab 08: CSR-масиви — одні на обидва scorer-и
         self._texts: dict[str, TextStore] = {}
         self._lock = threading.Lock()  # def-маршрути — у пулі потоків: створюємо під замком
 
@@ -55,8 +66,16 @@ class SearchEngine:
         with self._lock:
             s = self._searchers.get(scorer)
             if s is None:
+                if self._vector is None:
+                    self._vector = VectorIndex.from_index(self.index)
                 s = Searcher(
-                    self.index, SCORERS[scorer](), cache_size=self._cache_size, corpus_path=self._corpus
+                    self.index,
+                    SCORERS[scorer](),
+                    cache_size=self._cache_size,
+                    corpus_path=self._corpus,
+                    vector=self._vector,
+                    semantic=self.semantic,
+                    embedder=self.embedder,
                 )
                 self._searchers[scorer] = s
             return s
@@ -92,7 +111,9 @@ async def get_engine(
         if engine is None or engine.index is not index:
             if engine is not None:
                 engine.close()
-            engine = state.engine = SearchEngine(index, settings)
+            engine = state.engine = SearchEngine(
+                index, settings, getattr(state, "semantic", None), getattr(state, "embedder", None)
+            )
         return engine
 
 

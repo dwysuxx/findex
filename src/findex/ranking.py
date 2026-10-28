@@ -5,9 +5,16 @@ import math
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass, field
+from functools import lru_cache
 from typing import Protocol, overload, runtime_checkable
 
+import numpy as np
+import numpy.typing as npt
+
 from findex.index import Index, Posting
+
+type _Ints = npt.NDArray[np.int32]
+type _Floats = npt.NDArray[np.float64]
 
 
 @runtime_checkable
@@ -26,6 +33,26 @@ class TfIdf:
         if df == 0 or posting.tf <= 0:
             return 0.0
         return (1.0 + math.log(posting.tf)) * math.log(index.num_docs / df)
+
+    def batch(self, tfs: _Ints, doc_len: _Ints, df: int, num_docs: int, avg_len: float) -> _Floats:
+        """Lab 08: та сама формула для всіх постінгів терма. doc_len TF-IDF не потрібен."""
+        if df == 0:
+            return np.zeros(len(tfs))
+        # 1 + ln(tf) — табличкою з math.log, а не np.log: побітово ті самі значення, що й у __call__
+        return _one_plus_log_tf(int(tfs.max()))[tfs] * math.log(num_docs / df)
+
+
+@lru_cache(maxsize=8)
+def _table(size: int) -> _Floats:
+    table = np.zeros(size, dtype=np.float64)
+    table[1:] = [1.0 + math.log(t) for t in range(1, size)]
+    table.flags.writeable = False  # спільна для всіх запитів (і потоків) — захист від випадкового запису
+    return table
+
+
+def _one_plus_log_tf(max_tf: int) -> _Floats:
+    """Таблиця 1 + ln(t) для t = 0..max_tf (t = 0 -> 0, як `tf <= 0` у __call__); розмір — степінь 2."""
+    return _table(1 << (max_tf + 1).bit_length())
 
 
 @dataclass(frozen=True)
@@ -50,6 +77,15 @@ class BM25:
         length_ratio = doc_len / avg_len if avg_len else 1.0
         norm = 1.0 - self.b + self.b * length_ratio
         return self.idf(df, num_docs) * tf * (self.k1 + 1.0) / (tf + self.k1 * norm)
+
+    def batch(self, tfs: _Ints, doc_len: _Ints, df: int, num_docs: int, avg_len: float) -> _Floats:
+        """Lab 08: term_score для всіх постінгів терма — ufunc-и над масивами, без циклу.
+        Порядок операцій той самий, що в term_score, тож IEEE-результат побітово однаковий."""
+        if df <= 0:
+            return np.zeros(len(tfs))
+        length_ratio = doc_len / avg_len if avg_len else np.ones(len(tfs))
+        norm = 1.0 - self.b + self.b * length_ratio
+        return self.idf(df, num_docs) * tfs * (self.k1 + 1.0) / (tfs + self.k1 * norm)
 
     def __call__(self, term: str, posting: Posting, index: Index) -> float:
         return self.term_score(

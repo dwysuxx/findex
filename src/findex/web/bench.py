@@ -69,7 +69,9 @@ ROUTES = {
 class Server:
     """uvicorn у підпроцесі; чекаємо /health = 200 (тобто lifespan уже завантажив індекс)."""
 
-    def __init__(self, port: int, workers: int = 1, index: str = "index.bin") -> None:
+    def __init__(
+        self, port: int, workers: int = 1, index: str = "index.bin", embeddings: str | None = None
+    ) -> None:
         self.base = f"http://127.0.0.1:{port}"
         env = {
             **os.environ,
@@ -78,6 +80,8 @@ class Server:
             "CACHE_SIZE": "0",
             "LOG_LEVEL": "WARNING",  # рядок доступу на кожен запит теж коштує — у бенчмарку вимкнено
         }
+        if embeddings:  # Lab 08: semantic/hybrid; CACHE_SIZE=0 вимикає й кеш векторів запитів
+            env["EMBEDDINGS_PATH"] = embeddings
         cmd = [
             sys.executable,
             "-m",
@@ -223,14 +227,31 @@ def cmd_oha(args: argparse.Namespace) -> None:
         }
         results.append(row)
     else:
-        configs = [(1, "async def"), (1, "async def + to_thread"), (1, "def"), (4, "def")]
-        for workers, mode in configs:
-            with Server(args.port, workers) as srv:
-                url = f"{srv.base}{ROUTES[mode]}?{q}"
+        # (воркери, маршрут, mode). lab07 — як у L7.8; lab08 — той самий def-маршрут після M2 і режими M3
+        configs = {
+            "lab07": [
+                (1, "async def", "keyword"),
+                (1, "async def + to_thread", "keyword"),
+                (1, "def", "keyword"),
+                (4, "def", "keyword"),
+            ],
+            "lab08": [
+                (1, "def", "keyword"),
+                (4, "def", "keyword"),
+                (1, "def", "semantic"),
+                (1, "def", "hybrid"),
+            ],
+        }[args.set]
+        embeddings = args.embeddings if args.set == "lab08" else None
+        for workers, route, mode in configs:
+            with Server(args.port, workers, embeddings=embeddings) as srv:
+                params = httpx.QueryParams({"q": QUERY, "mode": mode}) if args.set == "lab08" else q
+                url = f"{srv.base}{ROUTES[route]}?{params}"
                 _oha(url, "3s", args.c)  # прогрів
+                label = f"`{route}`" + (f", mode={mode}" if args.set == "lab08" else "")
                 row = {
-                    "target": f"local, {workers} worker{'s' if workers > 1 else ''}, `{mode}`",
-                    "route": ROUTES[mode],
+                    "target": f"local, {workers} worker{'s' if workers > 1 else ''}, {label}",
+                    "route": ROUTES[route],
                     "c": args.c,
                     **_oha(url, args.duration, args.c),
                 }
@@ -263,7 +284,11 @@ def cmd_oha(args: argparse.Namespace) -> None:
     ]
     text = "\n".join(rows) + "\n"
     print(text)
-    name = "web_table_deployed.md" if args.url else "web_table.md"
+    name = (
+        "web_table_deployed.md"
+        if args.url
+        else ("web_table.md" if args.set == "lab07" else "web_table_lab08.md")
+    )
     (BENCH / name).write_text(text, encoding="utf-8")
 
 
@@ -281,6 +306,10 @@ def main() -> None:
     o.add_argument("--c-deployed", type=int, default=20)
     o.add_argument("--url", default=None)
     o.add_argument("--port", type=int, default=8771)
+    o.add_argument(
+        "--set", choices=["lab07", "lab08"], default="lab08", help="lab07 — таблиця L7.8; lab08 — L8.5"
+    )
+    o.add_argument("--embeddings", default="data/dota2wiki.emb.npz")
     o.set_defaults(fn=cmd_oha)
     args = p.parse_args()
     args.fn(args)

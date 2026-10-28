@@ -1,0 +1,47 @@
+[
+ {
+  "query": "hero damage attack",
+  "matched": 124,
+  "lab07_rank_ms": 0.447,
+  "lab08_rank_ms": 0.134,
+  "lab07_full_ms": 44.165,
+  "lab08_full_ms": 3.934,
+  "speedup": 11.2
+ },
+ {
+  "query": "pudge",
+  "matched": 4,
+  "lab07_rank_ms": 0.022,
+  "lab08_rank_ms": 0.027,
+  "lab07_full_ms": 15.875,
+  "lab08_full_ms": 0.319,
+  "speedup": 49.7
+ },
+ {
+  "query": "\"meat hook\"",
+  "matched": 1,
+  "lab07_rank_ms": 0.03,
+  "lab08_rank_ms": 0.034,
+  "lab07_full_ms": 4.374,
+  "lab08_full_ms": 0.254,
+  "speedup": 17.2
+ },
+ {
+  "query": "illusion OR illusions",
+  "matched": 118,
+  "lab07_rank_ms": 0.279,
+  "lab08_rank_ms": 0.109,
+  "lab07_full_ms": 38.571,
+  "lab08_full_ms": 1.706,
+  "speedup": 22.6
+ },
+ {
+  "query": "stun OR slow OR silence",
+  "matched": 120,
+  "lab07_rank_ms": 0.343,
+  "lab08_rank_ms": 0.147,
+  "lab07_full_ms": 37.57,
+  "lab08_full_ms": 1.539,
+  "speedup": 24.4
+ }
+]

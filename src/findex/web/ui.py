@@ -52,7 +52,13 @@ def home(request: Request, engine: EngineDep) -> HTMLResponse:
     """`def`: на непорожньому q тут той самий CPU-bound пошук, що й у /search."""
     raw = {k: v for k, v in request.query_params.items() if v != ""}
     q = raw.get("q", "").strip()
-    ctx: dict[str, Any] = {"q": q, "scorer": raw.get("scorer", "bm25"), "num_docs": engine.index.num_docs}
+    ctx: dict[str, Any] = {
+        "q": q,
+        "scorer": raw.get("scorer", "bm25"),
+        "mode": raw.get("mode", "keyword"),
+        "semantic": engine.semantic is not None,
+        "num_docs": engine.index.num_docs,
+    }
     status = 200
     if q:
         try:

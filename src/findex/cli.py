@@ -5,6 +5,8 @@
     findex crawl http://127.0.0.1:8001/ --max-pages 200 --out data/crawl.jsonl   # Lab 06
     findex search index.bin '"meat hook" OR rot' --k 5
     findex search index.bin pudge --json | jq .title
+    findex embed index.bin --model all-MiniLM-L6-v2                               # Lab 08 -> index.emb.npz
+    findex search index.bin "hero who cannot be seen" --mode hybrid
     findex stats index.bin
     findex -vv search index.bin pudge --repeat 2      # DEBUG: час @timed і cache HIT
 
@@ -22,6 +24,7 @@ import queue
 import re
 from collections.abc import Generator
 from contextlib import ExitStack, aclosing, contextmanager
+from dataclasses import replace
 from importlib.metadata import PackageNotFoundError, version
 from logging.handlers import QueueHandler, QueueListener
 from pathlib import Path
@@ -35,17 +38,20 @@ from rich.markup import escape
 from rich.progress import BarColumn, MofNCompleteColumn, Progress, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from findex.engine import Searcher
+from findex.engine import Mode, Searcher
 from findex.explain import explain
 from findex.index import Format, Index, guess_format, open_index
 from findex.parallel import PartialIndex, build_parallel, choose_executor
 from findex.query import QueryParseError, parse
 from findex.ranking import BM25, Scorer, TfIdf
+from findex.semantic import DEFAULT_MODEL, SemanticIndex, check_corpus, chunk_spans, default_path, file_sha256
+from findex.snippets import TextStore
 from findex.stats import index_stats
 from findex.store import save
 
-if TYPE_CHECKING:  # findex.crawler тягне httpx (~0.2 с імпорту) — у runtime лише всередині crawl
+if TYPE_CHECKING:  # httpx (~0.2 с імпорту) і onnxruntime (~0.5 с) — у runtime лише там, де потрібні
     from findex.crawler.crawl import CrawlStats
+    from findex.semantic import FastEmbedder
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +60,7 @@ log = logging.getLogger(__name__)
 ScorerName = Literal["bm25", "tfidf"]
 FormatName = Literal["pickle", "json"]
 ExecutorChoice = Literal["auto", "serial", "threads", "processes"]
+ModeName = Literal["keyword", "semantic", "hybrid"]
 SCORERS: dict[ScorerName, type[BM25] | type[TfIdf]] = {"bm25": BM25, "tfidf": TfIdf}
 
 console = Console()  # stdout: дані
@@ -327,6 +334,94 @@ def _highlight(snippet: str) -> str:
     return _MARK.sub(r"[bold yellow]\1[/]", escape(snippet))
 
 
+def _semantic(index: Index, path: Path, corpus: Path | None) -> "tuple[SemanticIndex, FastEmbedder]":
+    """Ембединги + модель для Searcher. Модель — та, якою їх рахували (записано у файлі)."""
+    from findex.semantic import FastEmbedder  # onnxruntime вантажиться лише для semantic/hybrid
+
+    if not path.is_file():
+        _fail(f"немає ембедингів {path}: спершу findex embed <індекс>")
+    try:
+        sem = SemanticIndex.load(path)
+    except (OSError, ValueError, KeyError) as e:
+        _fail(f"не вдалося прочитати {path}: {e}")
+    if sem.num_docs != index.num_docs:
+        _fail(f"{path} пораховано для {sem.num_docs} документів, а в індексі {index.num_docs}: перерахуйте")
+    try:
+        check_corpus(sem, _corpus_of(index, corpus))
+    except ValueError as e:
+        _fail(str(e))
+    return sem, FastEmbedder(sem.model)
+
+
+def _corpus_of(index: Index, corpus: Path | None) -> Path:
+    return corpus or Path(index.doc_meta[0].path.rpartition("#")[0])
+
+
+def _doc_texts(index: Index, corpus: Path | None) -> list[tuple[int, str]]:
+    stores: dict[str, TextStore] = {}
+    out: list[tuple[int, str]] = []
+    try:
+        for doc_id in range(index.num_docs):
+            meta = index.doc_meta[doc_id]
+            path = str(corpus) if corpus else meta.path.rpartition("#")[0]
+            store = stores.get(path) or stores.setdefault(path, TextStore(path))
+            out.append((doc_id, store.get(meta.title) or ""))
+    finally:
+        for st in stores.values():
+            st.close()
+    return out
+
+
+@app.command("embed")
+def embed_cmd(
+    index_path: Annotated[Path, typer.Argument(help="Збережений індекс")],
+    model: Annotated[str, typer.Option(help="Модель fastembed / sentence-transformers")] = DEFAULT_MODEL,
+    out: Annotated[Path | None, typer.Option("--out", "-o", help="За замовч. — <індекс>.emb.npz")] = None,
+    corpus: Annotated[
+        Path | None, typer.Option(help="jsonl з текстами (за замовч. — зі шляху в індексі)")
+    ] = None,
+    words: Annotated[int, typer.Option(min=2, help="Слів у шматку")] = 150,
+    overlap: Annotated[int, typer.Option(min=0, help="Перекриття сусідніх шматків, слів")] = 30,
+) -> None:
+    """Lab 08: порізати документи на шматки, порахувати ембединги, зберегти E: float32[n, d]."""
+    from findex.semantic import FastEmbedder, build
+
+    if overlap >= words:
+        _fail("--overlap має бути меншим за --words")
+    out = out or default_path(index_path)
+    with _loaded(index_path, None) as index:
+        texts = _doc_texts(index, corpus)
+        corpus_file = _corpus_of(index, corpus)  # тут, поки індекс відкритий (close() чистить doc_meta)
+        total = sum(len(chunk_spans(t, words, overlap)) for _, t in texts)
+        err.print(f"{index.num_docs} документів -> {total} шматків; модель {model}")
+        embedder = FastEmbedder(model)
+        progress = Progress(
+            TextColumn("[bold blue]ембединги"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            TimeElapsedColumn(),
+            console=err,
+        )
+        with progress:
+            task = progress.add_task("embed", total=total)
+            sem = build(
+                texts,
+                index.num_docs,
+                embedder,
+                words=words,
+                overlap=overlap,
+                on_progress=lambda n: progress.advance(task, n),
+            )
+    try:
+        sem = replace(sem, corpus_sha256=file_sha256(corpus_file))
+        sem.save(out)
+    except OSError as e:
+        _fail(f"не вдалося записати {out}: {e}")
+    console.print(
+        f"{len(sem.chunk_doc)} шматків × {sem.dim} ({sem.model}) → {out} ({out.stat().st_size / 2**20:.2f} МБ)"
+    )
+
+
 @app.command()
 def search(
     index_path: Annotated[Path, typer.Argument(help="Збережений індекс")],
@@ -341,24 +436,40 @@ def search(
     show_explain: Annotated[bool, typer.Option("--explain", help="Дерево запиту і розклад score")] = False,
     repeat: Annotated[int, typer.Option(min=1, hidden=True, help="Повторити запит (демо кешу)")] = 1,
     fmt: Annotated[FormatName | None, typer.Option("--format")] = None,
+    mode: Annotated[
+        ModeName, typer.Option(help="keyword — BM25; semantic — ембединги; hybrid — RRF обох")
+    ] = "keyword",
+    embeddings: Annotated[
+        Path | None, typer.Option(help="Файл findex embed (за замовч. — <індекс>.emb.npz)")
+    ] = None,
 ) -> None:
     """Ранжований пошук: таблиця з підсвіченими сніпетами або --json."""
     try:
-        tree = parse(query)
+        tree = parse(query) if mode != "semantic" else None  # семантика мову запитів не розбирає
     except QueryParseError as e:
         _fail(f"помилка в запиті {query!r}: {e}")
 
     with _loaded(index_path, fmt) as index:
         sc: Scorer = SCORERS[scorer]()
-        with Searcher(index, sc, corpus_path=corpus) as searcher:
+        sem, embedder = (
+            _semantic(index, embeddings or default_path(index_path), corpus)
+            if mode != "keyword"
+            else (None, None)
+        )
+        with Searcher(index, sc, corpus_path=corpus, semantic=sem, embedder=embedder) as searcher:
+            m: Mode = mode
             try:
-                results = searcher.search(query, k=k, snippets=snippets)
+                results = searcher.search_page(query, k, snippets=snippets, mode=m).results
                 for _ in range(repeat - 1):
-                    results = searcher.search(query, k=k, snippets=snippets)
+                    results = searcher.search_page(query, k, snippets=snippets, mode=m).results
             except ValueError as e:  # напр. фраза в індексі без positions
                 _fail(str(e))
             log.info("cache: %s", searcher.cache_info())
-            explanations = [searcher.explain(query, r.doc_id) for r in results] if show_explain else []
+            explanations = (
+                [searcher.explain(query, r.doc_id) for r in results]
+                if show_explain and tree is not None
+                else []
+            )
 
     if as_json:
         for rank, r in enumerate(results, 1):
@@ -368,12 +479,13 @@ def search(
             print(json.dumps(row, ensure_ascii=False))  # print, не rich: без переносів і розмітки
         return
 
-    if show_explain:
+    if show_explain and tree is not None:
         console.print(escape(explain(tree)), highlight=False)
     if not results:
         err.print(f"Нічого не знайдено за запитом [bold]{escape(query)}[/]")
         return
-    table = Table(title=f"{escape(query)} — {scorer}, top-{k}", show_lines=snippets)
+    label = scorer if mode == "keyword" else mode
+    table = Table(title=f"{escape(query)} — {label}, top-{k}", show_lines=snippets)
     table.add_column("#", justify="right", style="dim")
     table.add_column("score", justify="right", style="cyan")
     table.add_column("документ", style="bold")

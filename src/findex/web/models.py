@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from findex import ranking
 
 ScorerName = Literal["bm25", "tfidf"]
+ModeName = Literal["keyword", "semantic", "hybrid"]
 
 MAX_DEPTH = 1000  # page * k: глибше ранжувати не даємо — top-k купа росте з глибиною
 
@@ -25,6 +26,9 @@ class SearchRequest(BaseModel):
     k: int = Field(10, ge=1, le=100, description="Результатів на сторінку")
     page: int = Field(1, ge=1, description="Номер сторінки, з 1")
     scorer: ScorerName = "bm25"
+    mode: ModeName = Field(
+        "keyword", description="keyword — BM25/TF-IDF; semantic — ембединги; hybrid — RRF обох"
+    )
     snippets: bool = True
 
     @property
@@ -52,6 +56,7 @@ class SearchResult(BaseModel):
 class SearchResponse(BaseModel):
     query: str
     scorer: ScorerName
+    mode: ModeName = Field(description="score: BM25/TF-IDF, косинус або RRF — між режимами не порівнюється")
     total: int = Field(description="Скільки документів збіглося (на всіх сторінках)")
     page: int
     k: int
@@ -67,6 +72,12 @@ class DocumentResponse(BaseModel):
     text: str
 
 
+class SemanticStats(BaseModel):
+    model: str
+    chunks: int
+    dim: int
+
+
 class StatsResponse(BaseModel):
     version: str
     num_docs: int
@@ -76,6 +87,7 @@ class StatsResponse(BaseModel):
     has_positions: bool
     index_bytes: int
     uptime_s: float
+    semantic: SemanticStats | None = None
 
 
 class HealthResponse(BaseModel):

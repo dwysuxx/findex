@@ -136,6 +136,40 @@ main { flex: 1; }
   font-size: 0.9rem;
 }
 
+.modes {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.modes label {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modes input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modes label:has(input:checked) {
+  background: var(--accent);
+  color: #fff;
+}
+
+.modes label:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .opts select {
   margin-left: 4px;
   font: inherit;
