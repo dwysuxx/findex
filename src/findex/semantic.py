@@ -49,10 +49,13 @@ class Embedder(Protocol):
 
 
 def file_sha256(path: Path) -> str:
+    """SHA-256 вмісту з нормалізованими кінцями рядків. Git на Windows (core.autocrlf) видає той самий
+    корпус з CRLF, а в Docker/CI він з LF: перша версія хешувала сирі байти, і контейнер відмовився
+    вантажити ембединги, пораховані на Windows (впіймав CI-джоб docker)."""
     h = hashlib.sha256()
     with path.open("rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            h.update(block)
+        for line in f:
+            h.update(line.rstrip(b"\r\n") + b"\n")
     return h.hexdigest()
 
 

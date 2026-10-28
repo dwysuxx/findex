@@ -286,3 +286,15 @@ def test_doc_scores_unsorted_chunks_fall_back_to_ufunc_at(sem: SemanticIndex) ->
         sem, vectors=sem.vectors[perm], chunk_doc=sem.chunk_doc[perm], chunk_span=sem.chunk_span[perm]
     )
     assert np.array_equal(shuffled.doc_scores(q), sem.doc_scores(q))
+
+
+def test_corpus_fingerprint_ignores_line_endings(tmp_path: Path) -> None:
+    """git на Windows (autocrlf) видає корпус з CRLF, у Docker він з LF — відбиток має збігатися."""
+    from findex.semantic import file_sha256
+
+    lf, crlf = tmp_path / "lf.jsonl", tmp_path / "crlf.jsonl"
+    lf.write_bytes(b'{"id": "a", "text": "x"}\n{"id": "b", "text": "y"}\n')
+    crlf.write_bytes(b'{"id": "a", "text": "x"}\r\n{"id": "b", "text": "y"}\r\n')
+    assert file_sha256(lf) == file_sha256(crlf)
+    crlf.write_bytes(b'{"id": "a", "text": "z"}\r\n{"id": "b", "text": "y"}\r\n')
+    assert file_sha256(lf) != file_sha256(crlf)
