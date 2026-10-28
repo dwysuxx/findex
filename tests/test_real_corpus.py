@@ -23,10 +23,13 @@ def real_index() -> Index:
 
 
 def test_real_index_shape(real_index: Index) -> None:
-    # 124 герої (doc_id 0..123, як у Lab 01–08) + 251 предмет (dotabuff_parser/scripts/build_corpus.py)
-    assert real_index.num_docs == 375
+    # 124 герої (doc_id 0..123, як у Lab 01–08) + 251 предмет + 64 механіки + 10 рун
+    # (dotabuff_parser/scripts/build_corpus.py)
+    assert real_index.num_docs == 449
     assert real_index.doc_meta[13].title == "pudge"  # герої лишились першими, id не зсунулись
-    assert {"blink_dagger", "black_king_bar"} <= {m.title for m in real_index.doc_meta.values()}
+    assert {"blink_dagger", "black_king_bar", "invisibility", "illusion_rune"} <= {
+        m.title for m in real_index.doc_meta.values()
+    }
     assert len(real_index) > 10_000
     assert "pudge" in real_index
 
@@ -34,9 +37,9 @@ def test_real_index_shape(real_index: Index) -> None:
 def test_three_sanity_checks_on_real_corpus(real_index: Index) -> None:
     bm = BM25()
     n, avg = real_index.num_docs, real_index.avg_doc_length
-    # 1. рідкісний терм важить більше за поширений ("bonus" є в усіх 375 документах)
+    # 1. рідкісний терм важить більше за поширений ("the" є в усіх 449 документах)
     assert bm.term_score(1, real_index.df("ascetic"), avg, n, avg) > 100 * bm.term_score(
-        1, real_index.df("bonus"), avg, n, avg
+        1, real_index.df("the"), avg, n, avg
     )
     # 2. 20-те входження майже нічого не додає
     df = real_index.df("thrown")
